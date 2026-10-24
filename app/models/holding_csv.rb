@@ -1,0 +1,124 @@
+require "csv"
+
+class HoldingCsv
+  HEADERS = %w[ticker note currency observation_date quantity cost_basis price_per_share].freeze
+  MAX_BYTES = 1_048_576
+  MAX_ROWS = 500
+
+  Row = Struct.new(
+    :line, :ticker, :note, :currency, :observation_date, :quantity, :cost_basis, :price_per_share, :errors,
+    keyword_init: true
+  ) do
+    def valid?
+      errors.empty?
+    end
+  end
+
+  Result = Struct.new(:rows, :file_errors, keyword_init: true) do
+    def valid?
+      file_errors.empty? && rows.all?(&:valid?)
+    end
+  end
+
+  def self.template
+    CSV.generate { |csv| csv << HEADERS }
+  end
+
+  def self.parse(io, captured_on:)
+    text = read_utf8(io)
+    return Result.new(rows: [], file_errors: [ "The file is larger than 1 MB." ]) if text.bytesize > MAX_BYTES
+
+    table = CSV.parse(text, headers: true)
+    return Result.new(rows: [], file_errors: [ "The CSV headers must be #{HEADERS.join(', ')}." ]) unless table.headers == HEADERS
+    return Result.new(rows: [], file_errors: [ "The CSV has more than #{MAX_ROWS} data rows." ]) if table.size > MAX_ROWS
+
+    rows = table.each_with_index.map { |record, index| build_row(record, index + 2, captured_on) }
+    mark_duplicates(rows)
+    Result.new(rows:, file_errors: [])
+  rescue CSV::MalformedCSVError, ArgumentError
+    Result.new(rows: [], file_errors: [ "The CSV could not be parsed." ])
+  end
+
+  def self.build_row(record, line, captured_on)
+    errors = []
+    ticker = record["ticker"].to_s.strip.upcase
+    errors << "Ticker is required" if ticker.blank?
+
+    quantity = parse_number(record["quantity"])
+    if record["quantity"].to_s.strip.blank?
+      errors << "Quantity is required"
+    elsif quantity.nil?
+      errors << "Quantity is invalid"
+    elsif quantity.negative?
+      errors << "Quantity must be zero or positive"
+    end
+
+    cost_basis = parse_number(record["cost_basis"])
+    if record["cost_basis"].to_s.strip.blank?
+      errors << "Cost basis is required"
+    elsif cost_basis.nil?
+      errors << "Cost basis is invalid"
+    elsif cost_basis.negative?
+      errors << "Cost basis must be zero or positive"
+    end
+
+    price = record["price_per_share"].to_s.strip
+    price_value = if price.blank?
+      nil
+    else
+      parsed = parse_number(price)
+      errors << "Price is invalid" if parsed.nil? || parsed <= 0
+      parsed
+    end
+
+    date_text = record["observation_date"].to_s.strip
+    observed_on = if date_text.blank?
+      captured_on
+    else
+      parse_iso_date(date_text).tap { |date| errors << "Observation date must be YYYY-MM-DD" if date.nil? }
+    end
+    errors << "Observation date cannot be in the future" if observed_on && observed_on > Date.current
+
+    currency = record["currency"].to_s.strip.upcase
+    currency = "USD" if currency.blank?
+    errors << "Currency must be a 3-letter code" unless currency.match?(/\A[A-Z]{3}\z/)
+
+    Row.new(
+      line:, ticker:, note: record["note"].to_s, currency:, observation_date: observed_on,
+      quantity:, cost_basis:, price_per_share: price_value, errors:
+    )
+  end
+
+  def self.mark_duplicates(rows)
+    groups = rows.group_by { |row| [ row.ticker, row.observation_date ] }
+    groups.each_value do |group|
+      next if group.size < 2 || group.any? { |row| row.ticker.blank? || row.observation_date.nil? }
+
+      lines = group.map(&:line)
+      group.each { |row| row.errors << "Duplicate of rows #{lines.join(', ')} for this security and date" }
+    end
+  end
+
+  def self.parse_iso_date(value)
+    Date.iso8601(value)
+  rescue Date::Error
+    nil
+  end
+
+  def self.parse_number(value)
+    return if value.nil?
+
+    BigDecimal(value.to_s.strip.delete(",").delete("$"))
+  rescue ArgumentError
+    nil
+  end
+
+  def self.read_utf8(io)
+    raw = io.respond_to?(:read) ? io.read : io.to_s
+    text = +raw.to_s
+    text.force_encoding(Encoding::UTF_8)
+    raise ArgumentError, "Invalid UTF-8" unless text.valid_encoding?
+
+    text
+  end
+end

@@ -45,6 +45,44 @@ class ReportingTest < ActiveSupport::TestCase
     assert_equal 100, position.unrealized_gain
   end
 
+  test "a brokerage without recorded cash is valued from its holdings and is not incomplete" do
+    AccountObservation.revise_current!({ account: @cash }, observed_on: Date.current, updated_by: @user, amount: 0)
+    PositionObservation.revise_current!({ account: @brokerage, security: @security }, observed_on: Date.current, updated_by: @user, quantity: 2, cost_basis: 100)
+    MarketPrice.upsert_effective!(security: @security, amount: 100, market_on: Date.current, currency: "USD", source: "manual")
+    snapshot = Reporting::Snapshot.new(on: Date.current)
+
+    assert_not snapshot.incomplete?
+    assert_equal 200, snapshot.net_worth
+    assert_nil snapshot.components.find { |component| component.record_type == "AccountObservation" && component.label == "Brokerage" }
+  end
+
+  test "recorded zero brokerage cash contributes zero without double counting" do
+    AccountObservation.revise_current!({ account: @brokerage }, observed_on: Date.current, updated_by: @user, amount: 0)
+    PositionObservation.revise_current!({ account: @brokerage, security: @security }, observed_on: Date.current, updated_by: @user, quantity: 2, cost_basis: 100)
+    MarketPrice.upsert_effective!(security: @security, amount: 100, market_on: Date.current, currency: "USD", source: "manual")
+    snapshot = Reporting::Snapshot.new(on: Date.current)
+
+    assert_equal 200, snapshot.net_worth
+    assert_equal 1, snapshot.components.count { |component| component.label == "Brokerage" }
+  end
+
+  test "snapshot output distinguishes the requested date from the effective price date" do
+    AccountObservation.revise_current!({ account: @cash }, observed_on: Date.current, updated_by: @user, amount: 0)
+    PositionObservation.revise_current!({ account: @brokerage, security: @security },
+                                        observed_on: Date.current - 1, updated_by: @user, quantity: 2, cost_basis: 100)
+    MarketPrice.upsert_effective!(security: @security, amount: 100, market_on: Date.current - 2,
+                                  currency: "USD", source: "manual")
+    snapshot = Reporting::Snapshot.new(on: Date.current)
+
+    position = snapshot.components.find { |component| component.label.include?("VOO") }
+    assert_equal Date.current - 1, position.source_date
+    assert_equal Date.current - 2, position.price_date
+
+    payload = snapshot.to_h[:components].find { |component| component[:label].include?("VOO") }
+    assert_equal (Date.current - 1).iso8601, payload[:source_date]
+    assert_equal (Date.current - 2).iso8601, payload[:price_date]
+  end
+
   test "daily spending bins exclude transfers, keep refunds negative, and restart each month" do
     category = ExpenseCategory.create!(name: "Food")
     savings = Account.create!(name: "Savings", account_type: "savings", currency: "USD")

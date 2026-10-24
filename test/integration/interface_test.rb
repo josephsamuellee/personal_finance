@@ -123,7 +123,7 @@ class InterfaceTest < ActionDispatch::IntegrationTest
     qqq = Security.create!(ticker: "QQQ", identifier: "QQQ", currency: "USD")
     PositionObservation.revise_current!({ account:, security: voo }, observed_on: Date.current, updated_by: @user, quantity: 1, cost_basis: 1)
     PositionObservation.revise_current!({ account:, security: qqq }, observed_on: Date.current, updated_by: @user, quantity: 1, cost_basis: 1)
-    cached = MarketPrice.create!(security: qqq, amount: 8, currency: "USD", market_on: Date.current, retrieved_at: Time.current, source: "manual", entered_by: @user)
+    cached = MarketPrice.create!(security: qqq, amount: 8, currency: "USD", market_on: Date.current - 5, retrieved_at: Time.current, source: "manual", entered_by: @user)
 
     get assets_path
     assert_includes response.body, "Refreshing prices"

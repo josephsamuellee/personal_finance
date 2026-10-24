@@ -46,6 +46,12 @@
           </div>
           <p class="text-sm"><%= observation_label(card[:state], card[:row]&.observed_on) %></p>
           <ul class="mt-3 grid gap-2">
+            <% if card[:show_cash_row] %>
+              <li class="flex items-baseline justify-between gap-3 pl-4">
+                <span>Cash</span>
+                <span class="ui-money"><%= money(card[:cash_amount]) %></span>
+              </li>
+            <% end %>
             <% card[:holdings].each do |position| %>
               <% edit_key = "#{position[:account].id}-#{position[:security].id}" %>
               <li class="flex items-baseline justify-between gap-3 pl-4">
@@ -56,8 +62,13 @@
             <% end %>
           </ul>
           <div class="mt-3 flex flex-col items-start gap-2">
-            <%= link_to "Update balance", assets_path(on: @on, balance: account.id, group: @group), class: "ui-button-secondary" %>
-            <%= link_to "Add holding", asset_maintenance_path(form: "security", account_id: account.id), class: "ui-button-secondary" %>
+            <% if account.brokerage? %>
+              <%= render "accounts/brokerage_actions", account:, on: @on, group: @group, id_suffix: "-#{account.id}" %>
+            <% elsif account.liquid_cash? %>
+              <%= link_to "Update balance", assets_path(on: @on, balance: account.id, group: @group), class: "ui-button", id: "update-balance-#{account.id}" %>
+            <% else %>
+              <%= link_to "Update balance", assets_path(on: @on, balance: account.id, group: @group), class: "ui-button-secondary", id: "update-balance-#{account.id}" %>
+            <% end %>
           </div>
         </article>
       <% end %>

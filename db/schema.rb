@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_22_033000) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_24_010000) do
   create_table "account_observations", force: :cascade do |t|
     t.integer "account_id", null: false
     t.date "observed_on", null: false
@@ -134,6 +134,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_22_033000) do
     t.datetime "reversed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "kind", default: "expenses", null: false
+    t.integer "account_id"
+    t.index ["account_id"], name: "index_import_batches_on_account_id"
     t.index ["user_id"], name: "index_import_batches_on_user_id"
   end
 
@@ -147,7 +150,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_22_033000) do
     t.integer "entered_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "adjustment_convention", default: "raw", null: false
     t.index ["entered_by_id"], name: "index_market_prices_on_entered_by_id"
+    t.index ["security_id", "market_on", "currency", "adjustment_convention"], name: "index_market_prices_on_security_date_currency_convention", unique: true
     t.index ["security_id", "market_on"], name: "index_market_prices_on_security_id_and_market_on"
     t.index ["security_id"], name: "index_market_prices_on_security_id"
   end
@@ -211,11 +216,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_22_033000) do
 
   create_table "securities", force: :cascade do |t|
     t.string "ticker", null: false
-    t.string "identifier", null: false
+    t.string "identifier"
     t.string "currency", default: "USD", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["ticker"], name: "index_securities_on_ticker", unique: true
+    t.text "note"
+    t.string "exchange"
+    t.index ["ticker", "exchange"], name: "index_securities_on_ticker_and_exchange", unique: true, where: "exchange IS NOT NULL"
+    t.index ["ticker"], name: "index_securities_on_ticker_without_exchange", unique: true, where: "exchange IS NULL"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -251,6 +259,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_22_033000) do
   add_foreign_key "financial_decisions", "users", column: "created_by_id"
   add_foreign_key "financial_decisions", "users", column: "updated_by_id"
   add_foreign_key "financial_reviews", "users", column: "created_by_id"
+  add_foreign_key "import_batches", "accounts"
   add_foreign_key "import_batches", "users"
   add_foreign_key "market_prices", "securities"
   add_foreign_key "market_prices", "users", column: "entered_by_id"

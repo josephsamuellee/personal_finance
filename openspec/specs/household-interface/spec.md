@@ -395,3 +395,52 @@ Status cards, link bands, chart text, chart axes, daily spending bars, and the c
 #### Scenario: Light stays light on a dark device
 - **WHEN** appearance is Light and the operating system is dark
 - **THEN** the status page uses the light palette
+
+### Requirement: Historical-date confirmation
+Holding and price editing forms SHALL default the observation date to the current household-local date.
+When the selected observation date is earlier than today, the form SHALL display a prominent historical-date warning and SHALL require an explicit checkbox acknowledgment, unchecked by default, before saving.
+Returning the date to today SHALL remove the warning and the acknowledgment requirement.
+The forms SHALL NOT accept future-dated holdings or market prices.
+
+#### Scenario: Today's update needs no acknowledgment
+- **WHEN** the selected date is today and the user saves
+- **THEN** no historical-date acknowledgment is required
+
+#### Scenario: Historical update requires acknowledgment
+- **WHEN** the selected date is in 2021 and the user attempts to save
+- **THEN** a warning identifies the historical date and saving requires the explicit checkbox
+
+#### Scenario: Acknowledgment starts unchecked
+- **WHEN** a historical-date warning is shown
+- **THEN** its acknowledgment checkbox is unchecked by default
+
+#### Scenario: Returning to today clears the warning
+- **WHEN** the user changes the date back to today
+- **THEN** the historical warning and acknowledgment requirement are removed
+
+#### Scenario: Future dates are rejected
+- **WHEN** the user selects a date after today
+- **THEN** the form does not accept the save
+
+### Requirement: Date changes reload predictably
+When the selected observation date changes in a holding or price form, the form SHALL load the latest applicable observation and the exact-date price for the new date without using future observations.
+The form SHALL NOT silently discard unsaved changes when the date changes; it SHALL use a predictable reload or confirmation behavior that lets the user keep or abandon those changes.
+
+#### Scenario: Date change reloads applicable values
+- **WHEN** the user changes the observation date in an open editor
+- **THEN** the form shows the latest applicable observation and exact-date price for the new date
+
+#### Scenario: Unsaved changes are not silently lost
+- **WHEN** the user has edited fields and then changes the date
+- **THEN** the form either preserves the edits or asks for confirmation before discarding them
+
+### Requirement: Brokerage account action grid
+An active brokerage account SHALL show a 2-column, 3-row of fully clickable button-styled actions on its Assets card and on its details page, in this order: Add Holding, Update Holdings via CSV, Record Cash, Update prices, Remove Account, then an empty cell. Each control SHALL be about 44 CSS pixels and usable below 768px without horizontal overflow. Remove Account SHALL look distinct as archive.
+
+#### Scenario: Assets card layout
+- **WHEN** the user opens Assets on a viewport below 768px and a brokerage account is visible
+- **THEN** the card shows Add Holding top-left, Update Holdings via CSV top-right, Record Cash middle-left, Update prices middle-right, Remove Account bottom-left, and an empty bottom-right cell, and each entire visible surface activates the action
+
+#### Scenario: Account details match Assets
+- **WHEN** the user opens the same active brokerage account's details page
+- **THEN** the same 2-by-3 order and empty cell appear, and Refresh Prices is not a separate header control on that page

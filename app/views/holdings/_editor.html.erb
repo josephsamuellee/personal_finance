@@ -1,5 +1,5 @@
 <% edit_key = "#{editor[:account].id}-#{editor[:security].id}" %>
-<% price = editor[:price] %>
+<% price = editor[:latest_price] %>
 <% market_value = if editor[:row]&.closed?
      0
    elsif price && price.currency == "USD" && editor[:quantity].present?
@@ -11,34 +11,56 @@
   <h2 id="holding-editor-title" class="text-lg font-semibold"><%= editor[:security].ticker %></h2>
   <dl class="mt-3 grid gap-1 text-sm">
     <div><dt class="inline font-medium">Ticker</dt> <dd class="inline"><%= editor[:security].ticker %></dd></div>
-    <div><dt class="inline font-medium">Name</dt> <dd class="inline"><%= editor[:security].identifier %></dd></div>
+    <% if editor[:security].identifier.present? %>
+      <div><dt class="inline font-medium">Name</dt> <dd class="inline"><%= editor[:security].identifier %></dd></div>
+    <% end %>
     <div><dt class="inline font-medium">Account</dt> <dd class="inline"><%= editor[:account].name %></dd></div>
-    <div><dt class="inline font-medium">Latest valuation</dt> <dd class="inline"><%= market_value.nil? ? "Unknown" : money(market_value) %><% if price %> from <%= price.market_on %><% end %></dd></div>
+    <div><dt class="inline font-medium">Latest valuation</dt> <dd class="inline"><%= market_value.nil? ? "Unknown" : money(market_value) %><% if price %> from the price dated <%= price.market_on %><% end %></dd></div>
+    <div><dt class="inline font-medium">Prepopulated from</dt> <dd class="inline"><%= editor[:row] ? "observation on #{editor[:row].observed_on}" : "no earlier observation" %></dd></div>
     <div><dt class="inline font-medium">Last verified</dt> <dd class="inline"><%= editor[:last_verified_on] || "Not verified yet" %></dd></div>
     <div><dt class="inline font-medium">Status</dt> <dd class="inline"><%= observation_label(editor[:state], editor[:row]&.observed_on) %></dd></div>
   </dl>
-  <%= form_with url: holding_positions_path, class: "mt-4 grid gap-3" do %>
+  <%= form_with url: holding_positions_path, class: "mt-4 grid gap-3", data: { controller: "holding-editor" } do %>
     <%= hidden_field_tag :account_id, editor[:account].id %>
     <%= hidden_field_tag :security_id, editor[:security].id %>
     <%= hidden_field_tag :edit, edit_key %>
-    <%= hidden_field_tag :gesture, "verify" %>
     <div class="grid gap-1">
       <label class="text-sm font-medium" for="editor-date">Observation date</label>
-      <input class="ui-field" type="date" id="editor-date" name="observed_on" value="<%= editor[:observed_on] %>" min="2000-01-01" max="2100-12-31">
+      <input class="ui-field" type="date" id="editor-date" name="observed_on" value="<%= editor[:observed_on] %>" min="2000-01-01" max="<%= Date.current %>" data-holding-editor-target="date" data-action="holding-editor#dateChanged">
     </div>
+    <% if editor[:observed_on] < Date.current %>
+      <div class="rounded-md border border-amber-400 bg-amber-50 p-3 dark:border-amber-600 dark:bg-amber-950" role="alert" data-section="historical-warning">
+        <p class="text-sm font-medium">This observation date is in the past: <%= editor[:observed_on] %>.</p>
+        <label class="mt-2 flex min-h-11 items-center gap-2 text-sm">
+          <input type="checkbox" name="historical_ack" value="1" <% if editor[:errors]&.[](:historical_ack).present? %>aria-invalid="true"<% end %>>
+          I intend to record this historical observation
+        </label>
+        <% if editor[:errors]&.[](:historical_ack).present? %>
+          <p class="mt-1 text-sm text-red-700 dark:text-red-300"><%= editor[:errors][:historical_ack].to_sentence %></p>
+        <% end %>
+      </div>
+    <% end %>
     <div class="grid gap-1">
       <label class="text-sm font-medium" for="editor-quantity">Quantity</label>
-      <input class="ui-field" type="number" id="editor-quantity" name="quantity" value="<%= editor[:quantity] %>" step="0.00000001" <% if editor[:errors]&.[](:quantity).present? %>aria-invalid="true" aria-describedby="editor-quantity-error"<% end %>>
+      <input class="ui-field" type="number" id="editor-quantity" name="quantity" value="<%= editor[:quantity] %>" step="0.00000001" data-holding-editor-target="editedField" <% if editor[:errors]&.[](:quantity).present? %>aria-invalid="true" aria-describedby="editor-quantity-error"<% end %>>
       <% if editor[:errors]&.[](:quantity).present? %>
         <p id="editor-quantity-error" class="text-sm text-red-700 dark:text-red-300"><%= editor[:errors][:quantity].to_sentence %></p>
       <% end %>
     </div>
     <div class="grid gap-1">
       <label class="text-sm font-medium" for="editor-basis">Cost basis</label>
-      <input class="ui-field" type="text" inputmode="decimal" id="editor-basis" name="cost_basis" value="<%= editor[:cost_basis] %>" <% if editor[:cost_basis].blank? %>placeholder="$1,000"<% end %> <% if editor[:errors]&.[](:cost_basis).present? %>aria-invalid="true" aria-describedby="editor-basis-error"<% end %>>
+      <input class="ui-field" type="text" inputmode="decimal" id="editor-basis" name="cost_basis" value="<%= editor[:cost_basis] %>" data-holding-editor-target="editedField" <% if editor[:cost_basis].blank? %>placeholder="$1,000"<% end %> <% if editor[:errors]&.[](:cost_basis).present? %>aria-invalid="true" aria-describedby="editor-basis-error"<% end %>>
       <% if editor[:errors]&.[](:cost_basis).present? %>
         <p id="editor-basis-error" class="text-sm text-red-700 dark:text-red-300"><%= editor[:errors][:cost_basis].to_sentence %></p>
       <% end %>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="editor-price">Market price per share</label>
+      <input class="ui-field" type="text" inputmode="decimal" id="editor-price" name="price" value="<%= editor[:price] %>" data-holding-editor-target="editedField" <% if editor[:errors]&.[](:price).present? %>aria-invalid="true" aria-describedby="editor-price-error"<% end %>>
+      <% if editor[:errors]&.[](:price).present? %>
+        <p id="editor-price-error" class="text-sm text-red-700 dark:text-red-300"><%= editor[:errors][:price].to_sentence %></p>
+      <% end %>
+      <p class="text-sm" id="editor-price-note"><% if editor[:exact_price] %>Saved price for <%= editor[:observed_on] %>: <%= money(editor[:exact_price].amount) %><% else %>No price recorded for <%= editor[:observed_on] %>.<% end %></p>
     </div>
     <% if editor[:errors]&.any? %>
       <ul role="alert">
@@ -46,9 +68,17 @@
       </ul>
     <% end %>
     <p class="text-sm">Pending save: <%= editor[:intent] %></p>
+    <div class="rounded-md border border-slate-300 bg-white p-3 dark:border-slate-700 dark:bg-slate-900" data-holding-editor-target="bar" hidden>
+      <p class="text-sm font-medium">You have unsaved edits for a different date.</p>
+      <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+        <button class="ui-button-secondary" type="button" data-action="holding-editor#keepEdits">Reload the new date and keep my edits</button>
+        <button class="ui-button-secondary" type="button" data-action="holding-editor#discardEdits">Reload the new date without my edits</button>
+      </div>
+    </div>
     <div class="flex flex-col gap-2 sm:flex-row">
-      <button class="ui-button" type="submit" data-turbo-submits-with="Saving…"><%= editor[:intent] %></button>
-      <button class="ui-button-secondary" type="submit" formmethod="get" formaction="<%= assets_path %>">Update date</button>
+      <button class="ui-button" type="submit" name="gesture" value="save" data-turbo-submits-with="Saving…"><%= editor[:intent] %></button>
+      <button class="ui-button-secondary" type="submit" name="gesture" value="verify" data-turbo-submits-with="Verifying…">Verify holding</button>
+      <button class="ui-button-secondary" type="submit" formmethod="get" formaction="<%= assets_path %>" data-holding-editor-target="updateButton">Update date</button>
       <%= link_to "Cancel", assets_path(on: @on, group: @group), class: "ui-button-secondary", data: { action: "sheet#close" } %>
     </div>
   <% end %>

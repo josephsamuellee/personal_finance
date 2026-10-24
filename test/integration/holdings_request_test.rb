@@ -15,7 +15,7 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
   test "verify save marks one holding verified and leaves the other carried forward" do
     post holding_positions_path, params: {
       account_id: @account.id, security_id: @voo.id, observed_on: "2026-10-21",
-      gesture: "verify", quantity: "50", cost_basis: "10"
+      gesture: "verify", quantity: "50", cost_basis: "10", historical_ack: "1"
     }
     follow_redirect!
     assert_includes response.body, "Verified"
@@ -27,7 +27,7 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
   test "a corporate action changes quantity from its effective date" do
     post holding_positions_path, params: {
       account_id: @account.id, security_id: @voo.id, observed_on: "2026-06-01",
-      gesture: "add", quantity: "100", cost_basis: "10", reason: "corporate_action"
+      gesture: "add", quantity: "100", cost_basis: "10", reason: "corporate_action", historical_ack: "1"
     }
     current = PositionObservation.current_on({ account: @account, security: @voo }, Date.new(2026, 7, 1))
 
@@ -35,10 +35,14 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
     assert_equal "corporate_action", current.reason
   end
 
-  test "the holding editor names a verification, an edit, and a new observation" do
+  test "the holding editor names the pending save, shows the price field, and offers a distinct verify action" do
     edit = "#{@account.id}-#{@voo.id}"
     get assets_path(on: "2026-03-15", edit:)
-    assert_includes response.body, "Pending save: Verify"
+    assert_includes response.body, "Pending save: No changes"
+    assert_includes response.body, "Market price per share"
+    assert_includes response.body, "No price recorded for 2026-03-15"
+    assert_includes response.body, "Prepopulated from"
+    assert_select "button[name=gesture][value=verify]", text: "Verify holding"
     assert_includes response.body, "VOO"
     assert_includes response.body, "Brokerage"
     assert_includes response.body, "Observation date"
@@ -54,6 +58,32 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Carried forward from 2026-03-15"
   end
 
+  test "the holding editor prefills the exact-date price and shows when none is saved" do
+    MarketPrice.upsert_effective!(security: @voo, amount: 401, market_on: Date.new(2026, 3, 15),
+                                  currency: "USD", source: "manual", entered_by: @user)
+    edit = "#{@account.id}-#{@voo.id}"
+
+    get assets_path(on: "2026-03-15", edit:)
+
+    assert_select "input[name=price][value=?]", "401.0"
+    assert_includes response.body, "Saved price for 2026-03-15"
+
+    get assets_path(on: "2026-03-20", edit:)
+    assert_includes response.body, "No price recorded for 2026-03-20"
+  end
+
+  test "the editor distinguishes the requested date from the effective price date" do
+    MarketPrice.upsert_effective!(security: @voo, amount: 401, market_on: Date.new(2026, 3, 15),
+                                  currency: "USD", source: "manual", entered_by: @user)
+    edit = "#{@account.id}-#{@voo.id}"
+
+    get assets_path(on: "2026-03-20", edit:)
+
+    assert_select "input[name=observed_on][value=?]", "2026-03-20"
+    assert_includes response.body, "No price recorded for 2026-03-20"
+    assert_includes response.body, "from the price dated 2026-03-15"
+  end
+
   test "a backdated save is stored on the selected date and cancel does not write" do
     before = PositionObservation.count
     get assets_path(on: "2026-10-21", edit: "#{@account.id}-#{@voo.id}")
@@ -63,7 +93,7 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
 
     post holding_positions_path, params: {
       account_id: @account.id, security_id: @voo.id, observed_on: "2026-01-15",
-      gesture: "verify", quantity: "4", cost_basis: "10"
+      gesture: "verify", quantity: "4", cost_basis: "10", historical_ack: "1"
     }
     stored = PositionObservation.kept.find_by!(account: @account, security: @voo, observed_on: Date.new(2026, 1, 15))
     assert_equal 4, stored.quantity
@@ -106,7 +136,10 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
     assert_operator response.body.index('data-section="reporting-date"'), :<, response.body.index('data-section="accounts"')
     assert_select "#account-card-#{@account.id} a.ui-link", text: "VOO"
     assert_select "#account-card-#{cash.id}", text: /\$25\.00/
-    assert_select "a[href=?]", asset_maintenance_path(form: "security", account_id: cash.id), text: "Add holding"
+    assert_select "#account-card-#{cash.id} a.ui-button", text: "Update balance"
+    assert_select "#account-card-#{cash.id} a", text: "Add holding", count: 0
+    assert_select "#account-card-#{@account.id} a.ui-button", text: "Add Holding"
+    assert_select "#account-card-#{@account.id} a.ui-button-secondary", text: "Record Cash"
 
     get asset_maintenance_path(form: "security")
     assert_select "input[name=?]", "security[ticker]"
@@ -137,5 +170,54 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
 
     assert_includes body["detailed"].map { |point| point["date"] }, "2021-08-28"
     assert_includes body["detailed"].map { |point| point["date"] }, "2021-09-04"
+  end
+
+  test "a price-only save updates the shared price without a holding observation" do
+    before = PositionObservation.count
+
+    post holding_positions_path, params: {
+      account_id: @account.id, security_id: @voo.id, observed_on: "2026-03-15",
+      gesture: "save", quantity: "50", cost_basis: "10", price: "401", historical_ack: "1"
+    }
+
+    assert_redirected_to assets_path(on: "2026-03-15")
+    assert_equal before, PositionObservation.count
+    assert_equal BigDecimal("401"), MarketPrice.effective_on(@voo, Date.new(2026, 3, 15)).amount
+  end
+
+  test "an unchanged save records nothing and explains it" do
+    before = PositionObservation.count
+
+    post holding_positions_path, params: {
+      account_id: @account.id, security_id: @voo.id, observed_on: "2026-03-15",
+      gesture: "save", quantity: "50", cost_basis: "10", historical_ack: "1"
+    }
+    follow_redirect!
+
+    assert_equal before, PositionObservation.count
+    assert_includes response.body, "Nothing changed"
+  end
+
+  test "a past-date save without the acknowledgment is rejected in place" do
+    before = PositionObservation.count
+
+    post holding_positions_path, params: {
+      account_id: @account.id, security_id: @voo.id, observed_on: "2026-01-15",
+      gesture: "save", quantity: "4", cost_basis: "10"
+    }
+
+    assert_response :unprocessable_entity
+    assert_equal before, PositionObservation.count
+    assert_includes response.body, "acknowledged"
+  end
+
+  test "a future-dated holding save is rejected" do
+    post holding_positions_path, params: {
+      account_id: @account.id, security_id: @voo.id, observed_on: (Date.current + 5).iso8601,
+      gesture: "save", quantity: "4", cost_basis: "10"
+    }
+
+    assert_response :unprocessable_entity
+    assert_includes response.body, "future"
   end
 end

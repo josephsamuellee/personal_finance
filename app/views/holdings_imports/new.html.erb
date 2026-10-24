@@ -1,0 +1,18 @@
+<% content_for :title, "Import holdings" %>
+<%= render "shared/page_header",
+      title: "Import holdings for #{@account.name}",
+      purpose: "Upload a CSV snapshot of quantities, cost basis, and prices for this account only.",
+      primary: link_to("Download CSV template", template_account_holdings_import_path(@account), class: "ui-button-secondary") %>
+
+<section class="ui-card mt-4 max-w-lg">
+  <p class="text-sm">Columns in order: ticker, note, currency, observation_date, quantity, cost_basis, price_per_share. Dates are YYYY-MM-DD. Quantity is the total shares on that date, not a change. Blank currency is USD. Blank date uses today. A blank note leaves the shared note unchanged. Price may be omitted only when an exact-date price already exists.</p>
+  <%= form_with url: account_holdings_import_path(@account),
+              method: :post,
+              multipart: true,
+              class: "mt-4 grid gap-3" do %> 
+      <label class="text-sm font-medium" for="holdings-file">CSV file</label>
+    <input class="ui-field" id="holdings-file" type="file" name="file" accept=".csv,text/csv" required>
+    <button class="ui-button" type="submit" data-turbo-submits-with="Reading CSV…">Preview import</button>
+  <% end %>
+  <p class="mt-3"><%= link_to "Skip", account_path(@account), class: "ui-button-secondary" %></p>
+</section>

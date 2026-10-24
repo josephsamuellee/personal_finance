@@ -1,7 +1,7 @@
 require "application_system_test_case"
 
 class AppearanceTest < ApplicationSystemTestCase
-  driven_by :selenium, using: :headless_chrome, screen_size: [1440, 900]
+  driven_by :selenium, using: :headless_chrome, screen_size: [ 1440, 900 ]
 
   test "dark applies without a manual reload and the chart uses that text color" do
     visit new_user_path

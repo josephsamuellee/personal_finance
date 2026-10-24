@@ -41,6 +41,42 @@ class MarketDataTest < ActiveSupport::TestCase
     assert MarketPrice.exists?(@cached.id)
   end
 
+  test "an account-scoped refresh selects that account's open holdings once" do
+    schwab = Account.create!(name: "Schwab", account_type: "brokerage", currency: "USD")
+    aapl = Security.create!(ticker: "AAPL", identifier: "AAPL", currency: "USD")
+    msft = Security.create!(ticker: "MSFT", identifier: "MSFT", currency: "USD")
+    PositionObservation.revise_current!({ account: @account, security: aapl }, observed_on: Date.current, updated_by: @user, quantity: 3, cost_basis: 1)
+    PositionObservation.revise_current!({ account: schwab, security: @security }, observed_on: Date.current, updated_by: @user, quantity: 4, cost_basis: 1)
+    PositionObservation.revise_current!({ account: schwab, security: msft }, observed_on: Date.current, updated_by: @user, quantity: 1, cost_basis: 1)
+    PositionObservation.revise_current!({ account: @account, security: msft }, observed_on: Date.current, updated_by: @user, quantity: 0, cost_basis: 1)
+    spy = SpyAdapter.new
+    result = MarketData::Refresh.new(adapter: spy, account: @account, on: Date.current).call
+
+    assert_equal 2, spy.tickers.uniq.size
+    assert_includes spy.tickers, "VOO"
+    assert_includes spy.tickers, "AAPL"
+    assert_not_includes spy.tickers, "MSFT"
+    assert_equal result.updated.map(&:ticker).sort, %w[AAPL VOO]
+  end
+
+  test "a manual price on the reporting date is not overwritten" do
+    MarketPrice.upsert_effective!(security: @security, amount: 99, market_on: Date.current, currency: "USD", source: "manual", entered_by: @user)
+    result = MarketData::Refresh.new(adapter: SpyAdapter.new, account: @account, on: Date.current).call
+
+    assert_includes result.kept_manual, @security
+    assert_equal BigDecimal("99"), MarketPrice.effective_on(@security, Date.current).amount
+  end
+
+  test "a repeated refresh updates the existing price instead of accumulating rows" do
+    MarketData::Refresh.new(adapter: SpyAdapter.new).call
+    assert_equal 1, MarketPrice.where(security: @security, market_on: Date.new(2026, 10, 20)).count
+
+    MarketData::Refresh.new(adapter: SpyAdapter.new).call
+
+    assert_equal 1, MarketPrice.where(security: @security, market_on: Date.new(2026, 10, 20)).count
+    assert_equal BigDecimal("11"), MarketPrice.where(security: @security, market_on: Date.new(2026, 10, 20)).pick(:amount)
+  end
+
   class SpyAdapter < MarketData::Adapter
     NAME = "Spy"
     attr_reader :calls
@@ -49,9 +85,15 @@ class MarketDataTest < ActiveSupport::TestCase
       @calls = 0
     end
 
-    def quote(_security)
+    def quote(security)
       @calls += 1
+      @tickers ||= []
+      @tickers << security.ticker
       { amount: BigDecimal("11"), market_on: Date.new(2026, 10, 20), currency: "USD" }
+    end
+
+    def tickers
+      @tickers || []
     end
   end
 

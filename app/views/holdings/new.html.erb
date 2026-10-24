@@ -1,0 +1,82 @@
+<% content_for :title, "Add holding" %>
+<%= render "shared/page_header",
+      title: "Add holding to #{@account.name}",
+      purpose: "Choose an existing security or enter a new ticker, then save the holding once.",
+      primary: link_to("Back to Assets", assets_path, class: "ui-button-secondary") %>
+
+<section class="ui-card mt-4 max-w-lg">
+  <%= form_with url: account_holdings_path(@account), class: "grid gap-3", data: { controller: "holding-editor" } do %>
+    <% if @errors&.any? %>
+      <ul role="alert">
+        <% @errors.full_messages.each do |message| %><li><%= message %></li><% end %>
+      </ul>
+    <% end %>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="holding-security">Existing security</label>
+      <select class="ui-field" name="security_id" id="holding-security" data-action="holding-editor#reload">
+        <option value="">Choose an existing security</option>
+        <% @securities.each do |security| %>
+          <option value="<%= security.id %>" <% if @security&.id == security.id %>selected<% end %>><%= security.ticker %></option>
+        <% end %>
+      </select>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="holding-ticker">Or a new ticker</label>
+      <input class="ui-field" type="text" id="holding-ticker" name="ticker" value="<%= @values[:ticker] %>" placeholder="XYZ" <% if @errors&.[](:ticker).present? %>aria-invalid="true" aria-describedby="holding-ticker-error"<% end %>>
+      <% if @errors&.[](:ticker).present? %>
+        <p id="holding-ticker-error" class="text-sm text-red-700 dark:text-red-300"><%= @errors[:ticker].to_sentence %></p>
+      <% end %>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="holding-note">Internal note (optional, shared)</label>
+      <textarea class="ui-field" id="holding-note" name="note" rows="2"><%= @values[:note] %></textarea>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="holding-currency">Currency</label>
+      <input class="ui-field" type="text" id="holding-currency" name="currency" value="<%= @values[:currency].presence || "USD" %>">
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="holding-date">Observation date</label>
+      <input class="ui-field" type="date" id="holding-date" name="observed_on" value="<%= @observed_on %>" min="2000-01-01" max="<%= Date.current %>" data-action="holding-editor#reload">
+    </div>
+    <% if @observed_on < Date.current %>
+      <div class="rounded-md border border-amber-400 bg-amber-50 p-3 dark:border-amber-600 dark:bg-amber-950" role="alert" data-section="historical-warning">
+        <p class="text-sm font-medium">This observation date is in the past: <%= @observed_on %>.</p>
+        <label class="mt-2 flex min-h-11 items-center gap-2 text-sm">
+          <input type="checkbox" name="historical_ack" value="1" <% if @errors&.[](:historical_ack).present? %>aria-invalid="true"<% end %>>
+          I intend to record this historical observation
+        </label>
+        <% if @errors&.[](:historical_ack).present? %>
+          <p class="mt-1 text-sm text-red-700 dark:text-red-300"><%= @errors[:historical_ack].to_sentence %></p>
+        <% end %>
+      </div>
+    <% end %>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="holding-quantity">Quantity</label>
+      <input class="ui-field" type="number" id="holding-quantity" name="quantity" value="<%= @values[:quantity] %>" step="0.00000001" required <% if @errors&.[](:quantity).present? %>aria-invalid="true" aria-describedby="holding-quantity-error"<% end %>>
+      <% if @errors&.[](:quantity).present? %>
+        <p id="holding-quantity-error" class="text-sm text-red-700 dark:text-red-300"><%= @errors[:quantity].to_sentence %></p>
+      <% end %>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="holding-basis">Total cost basis</label>
+      <input class="ui-field" type="text" inputmode="decimal" id="holding-basis" name="cost_basis" value="<%= @values[:cost_basis] %>" <% if @values[:cost_basis].blank? %>placeholder="$1,000"<% end %> required <% if @errors&.[](:cost_basis).present? %>aria-invalid="true" aria-describedby="holding-basis-error"<% end %>>
+      <% if @errors&.[](:cost_basis).present? %>
+        <p id="holding-basis-error" class="text-sm text-red-700 dark:text-red-300"><%= @errors[:cost_basis].to_sentence %></p>
+      <% end %>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="holding-price">Market price per share</label>
+      <input class="ui-field" type="text" inputmode="decimal" id="holding-price" name="price" value="<%= @price_value %>" <% if @errors&.[](:price).present? %>aria-invalid="true" aria-describedby="holding-price-error"<% end %>>
+      <% if @errors&.[](:price).present? %>
+        <p id="holding-price-error" class="text-sm text-red-700 dark:text-red-300"><%= @errors[:price].to_sentence %></p>
+      <% end %>
+      <p class="text-sm" id="holding-price-note"><% if @exact_price %>Saved price for <%= @observed_on %>: <%= money(@exact_price.amount) %><% else %>No saved price for this security and date yet.<% end %></p>
+    </div>
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <button class="ui-button" type="submit" data-turbo-submits-with="Saving…">Save holding</button>
+      <button class="ui-button-secondary" type="submit" formmethod="get" formaction="<%= new_account_holding_path(@account) %>" data-holding-editor-target="updateButton">Load saved price</button>
+      <%= link_to "Cancel", assets_path, class: "ui-button-secondary" %>
+    </div>
+  <% end %>
+</section>

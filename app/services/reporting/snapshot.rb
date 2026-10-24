@@ -76,9 +76,12 @@ module Reporting
 
       def account_components
         Account.order(:name).flat_map do |account|
+          next [] unless account.visible_on?(on)
+
           row = AccountObservation.current_on({ account_id: account.id }, on)
           if row.nil?
-            next [] if account.archived_at.present?
+            # Unrecorded brokerage cash counts as zero rather than unknown.
+            next [] if account.brokerage?
 
             [ unknown_component(account, account.liquid_cash? ? "Cash" : account.account_type.titleize) ]
           elsif account.currency != "USD"
@@ -93,6 +96,8 @@ module Reporting
         pairs = PositionObservation.kept.where(observed_on: ..on).distinct.pluck(:account_id, :security_id)
         pairs.filter_map do |account_id, security_id|
           account = Account.find(account_id)
+          next unless account.visible_on?(on)
+
           security = Security.find(security_id)
           row = PositionObservation.current_on({ account_id:, security_id: }, on)
           next if row.nil?

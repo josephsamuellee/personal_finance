@@ -1,11 +1,12 @@
 <% content_for :title, "Asset maintenance" %>
 <%= render "shared/page_header",
       title: "Asset maintenance",
-      purpose: "Create a security, enter a price, or record a corporate action.",
+      purpose: "Create a security, enter a price, import history, or record a corporate action.",
       primary: link_to("Back to Assets", assets_path, class: "ui-button-secondary") %>
 <nav class="mb-4 flex flex-col items-start gap-2" aria-label="Maintenance forms">
   <%= link_to "Add a security", asset_maintenance_path(form: "security"), class: "ui-button-secondary" %>
   <%= link_to "Record a manual price", asset_maintenance_path(form: "price"), class: "ui-button-secondary" %>
+  <%= link_to "Import historical prices", asset_maintenance_path(form: "import"), class: "ui-button-secondary" %>
   <%= link_to "Record a corporate action", asset_maintenance_path(form: "action"), class: "ui-button-secondary" %>
 </nav>
 <% if @form.blank? %>
@@ -17,10 +18,10 @@
     <% if @security.errors.any? %><ul role="alert"><% @security.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul><% end %>
     <%= form.label :ticker, "Ticker" %>
     <%= form.text_field :ticker, required: true %>
-    <%= form.label :identifier, "Name" %>
-    <%= form.text_field :identifier, required: true %>
+    <%= form.label :note, "Internal note (optional)" %>
+    <%= form.text_area :note, rows: 2 %>
     <%= form.label :currency %>
-    <%= form.text_field :currency, required: true %>
+    <%= form.text_field :currency, value: @security.currency || "USD", required: true %>
     <%= form.submit "Add security" %>
   <% end %>
 <% elsif @form == "price" %>
@@ -36,6 +37,20 @@
     <%= form.hidden_field :currency, value: "USD" %>
     <%= form.submit "Save price" %>
   <% end %>
+<% elsif @form == "import" %>
+  <h2 class="text-lg font-semibold">Import historical prices</h2>
+  <%= form_with url: import_market_prices_path, class: "mt-3 grid max-w-lg gap-3" do %>
+    <label class="text-sm font-medium" for="import-security">Security</label>
+    <%= select_tag :security_id, options_from_collection_for_select(Security.order(:ticker), :id, :ticker), id: "import-security", class: "ui-field", include_blank: "Choose a security", required: true %>
+    <label class="text-sm font-medium" for="import-from">From</label>
+    <input class="ui-field" type="date" id="import-from" name="from" value="<%= Date.current.prev_month %>" max="<%= Date.current %>" required>
+    <label class="text-sm font-medium" for="import-to">To</label>
+    <input class="ui-field" type="date" id="import-to" name="to" value="<%= Date.current %>" max="<%= Date.current %>" required>
+    <label class="flex min-h-11 items-center gap-2 text-sm font-medium">
+      <input type="checkbox" name="replace" value="1"> Replace manually entered prices with provider prices
+    </label>
+    <button class="ui-button" type="submit" data-turbo-submits-with="Importing…">Import prices</button>
+  <% end %>
 <% elsif @form == "action" %>
   <h2 class="text-lg font-semibold">Record a corporate action</h2>
   <%= form_with url: holding_positions_path, class: "mt-3 grid max-w-lg gap-3" do %>
@@ -45,7 +60,15 @@
     <label class="text-sm font-medium" for="action-security">Security</label>
     <%= select_tag :security_id, options_from_collection_for_select(Security.order(:ticker), :id, :ticker, @action_values[:security_id]), id: "action-security", class: "ui-field", include_blank: "Choose a security" %>
     <label class="text-sm font-medium" for="action-date">Effective date</label>
-    <input class="ui-field" type="date" id="action-date" name="observed_on" value="<%= @action_values[:observed_on] || Date.current %>">
+    <input class="ui-field" type="date" id="action-date" name="observed_on" value="<%= @action_values[:observed_on] || Date.current %>" max="<%= Date.current %>">
+    <% if (@action_values[:observed_on] ? Date.parse(@action_values[:observed_on]) : Date.current) < Date.current %>
+      <div class="rounded-md border border-amber-400 bg-amber-50 p-3 dark:border-amber-600 dark:bg-amber-950" role="alert">
+        <p class="text-sm font-medium">This effective date is in the past.</p>
+        <label class="mt-2 flex items-center gap-2 text-sm">
+          <input type="checkbox" name="historical_ack" value="1"> I intend to record this historical observation
+        </label>
+      </div>
+    <% end %>
     <label class="text-sm font-medium" for="action-quantity">Quantity</label>
     <input class="ui-field" type="number" id="action-quantity" name="quantity" step="0.00000001" value="<%= @action_values[:quantity] %>">
     <label class="text-sm font-medium" for="action-basis">Cost basis</label>

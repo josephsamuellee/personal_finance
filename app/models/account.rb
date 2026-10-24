@@ -15,6 +15,14 @@ class Account < ApplicationRecord
     update!(archived_at: Time.current)
   end
 
+  def unarchive!
+    update!(archived_at: nil)
+  end
+
+  def visible_on?(date)
+    archived_at.nil? || archived_at.to_date > date
+  end
+
   def liquid_cash?
     checking? || savings? || brokerage?
   end

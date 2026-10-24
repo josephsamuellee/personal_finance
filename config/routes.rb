@@ -25,13 +25,26 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :accounts
+  resources :accounts do
+    member do
+      post :restore
+      post :refresh_prices
+    end
+    resource :holdings_import, only: %i[new create], controller: "holdings_imports" do
+      get :preview
+      post :confirm
+      delete :cancel
+      get :template
+    end
+  end
   resources :securities, only: [ :create ]
   get "assets/maintenance", to: "asset_maintenance#show", as: :asset_maintenance
   get "assets", to: "holdings#index"
   get "holdings/:account_id/:security_id", to: "holdings#show", as: :holding
   post "holdings/positions", to: "holdings#update_position", as: :holding_positions
   post "holdings/balances", to: "holdings#update_balance", as: :holding_balances
+  get "accounts/:account_id/holdings/new", to: "holdings#new", as: :new_account_holding
+  post "accounts/:account_id/holdings", to: "holdings#create", as: :account_holdings
 
   resources :reviews, only: [ :index, :show, :new, :create ], controller: "financial_reviews"
   resources :decisions, controller: "financial_decisions"
@@ -40,6 +53,7 @@ Rails.application.routes.draw do
   resources :market_prices, only: [ :create ] do
     collection do
       post :refresh
+      post :import
     end
   end
 

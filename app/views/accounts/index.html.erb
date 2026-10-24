@@ -13,6 +13,7 @@
         <p class="text-sm"><%= account.account_type %> <%= account.currency %></p>
         <% if account.archived_at %>
           <p>Archived</p>
+          <%= button_to "Restore", restore_account_path(account), method: :post, class: "ui-button-secondary mt-2" %>
         <% else %>
           <%= button_to "Archive", account_path(account), method: :patch, params: { archive: "1" }, class: "ui-button-secondary mt-2", form: { data: { turbo_submits_with: "Archiving…" } } %>
         <% end %>

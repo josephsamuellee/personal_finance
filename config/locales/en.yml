@@ -29,3 +29,15 @@
 
 en:
   hello: "Hello world"
+  activemodel:
+    attributes:
+      holding_form:
+        observed_on: "Observation date"
+        quantity: "Quantity"
+        cost_basis: "Cost basis"
+        price: "Market price per share"
+        historical_ack: "Historical-date acknowledgment"
+        note: "Internal note"
+        ticker: "Ticker"
+        exchange: "Exchange"
+        currency: "Currency"

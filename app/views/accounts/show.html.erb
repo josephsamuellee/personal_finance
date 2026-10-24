@@ -1,7 +1,38 @@
-<h1 class="text-xl font-semibold"><%= @account.name %></h1>
-<p><%= @account.account_type %> <%= @account.currency %></p>
-<ul>
-  <% @observations.each do |observation| %>
-    <li><%= observation.observed_on %> sequence <%= observation.sequence %> <%= money(observation.amount) %></li>
-  <% end %>
-</ul>
+<% content_for :title, @account.name %>
+<%= render "shared/page_header",
+      title: @account.name,
+      purpose: "#{@account.account_type.titleize} · #{@account.currency}" %>
+
+<% if @account.archived_at %>
+  <p class="mb-4 text-sm">Archived on <%= @account.archived_at.to_date %>.</p>
+  <%= button_to "Restore account", restore_account_path(@account), method: :post, class: "ui-button", form: { data: { turbo_confirm: "Restore this account to active use?" } } %>
+<% elsif @account.brokerage? %>
+  <%= render "accounts/brokerage_actions", account: @account, on: @on %>
+<% end %>
+
+<% if @holdings.any? %>
+  <section class="ui-card mt-4" aria-labelledby="account-holdings">
+    <h2 id="account-holdings" class="font-semibold">Holdings on <%= @on %></h2>
+    <ul class="mt-3 grid gap-2" data-section="account-holdings">
+      <% @holdings.each do |holding| %>
+        <li class="flex items-baseline justify-between gap-3">
+          <%= link_to holding[:security].ticker,
+                      assets_path(on: @on, edit: "#{@account.id}-#{holding[:security].id}"),
+                      id: "account-holding-#{@account.id}-#{holding[:security].id}",
+                      class: "ui-link" %>
+          <span class="ui-money"><%= holding[:market_value].nil? ? "Unknown" : money(holding[:market_value]) %></span>
+        </li>
+        <li class="pl-4 text-sm"><%= observation_label(holding[:state], holding[:row]&.observed_on) %></li>
+      <% end %>
+    </ul>
+  </section>
+<% end %>
+
+<section class="mt-4">
+  <h2 class="text-lg font-semibold">Balance history</h2>
+  <ul>
+    <% @observations.each do |observation| %>
+      <li><%= observation.observed_on %> sequence <%= observation.sequence %> <%= money(observation.amount) %></li>
+    <% end %>
+  </ul>
+</section>

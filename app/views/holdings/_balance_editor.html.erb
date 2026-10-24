@@ -5,11 +5,22 @@
   <% end %>
   <%= form_with url: holding_balances_path, class: "mt-3 grid gap-3" do %>
     <%= hidden_field_tag :account_id, editor[:account]&.id %>
-    <%= hidden_field_tag :gesture, "verify" %>
     <div class="grid gap-1">
       <label class="text-sm font-medium" for="balance-date">Observation date</label>
-      <input class="ui-field" type="date" id="balance-date" name="observed_on" value="<%= editor[:observed_on] %>">
+      <input class="ui-field" type="date" id="balance-date" name="observed_on" value="<%= editor[:observed_on] %>" min="2000-01-01" max="<%= Date.current %>">
     </div>
+    <% if editor[:observed_on] < Date.current %>
+      <div class="rounded-md border border-amber-400 bg-amber-50 p-3 dark:border-amber-600 dark:bg-amber-950" role="alert" data-section="historical-warning">
+        <p class="text-sm font-medium">This observation date is in the past: <%= editor[:observed_on] %>.</p>
+        <label class="mt-2 flex min-h-11 items-center gap-2 text-sm">
+          <input type="checkbox" name="historical_ack" value="1" <% if editor[:errors]&.[](:historical_ack).present? %>aria-invalid="true"<% end %>>
+          I intend to record this historical observation
+        </label>
+        <% if editor[:errors]&.[](:historical_ack).present? %>
+          <p class="mt-1 text-sm text-red-700 dark:text-red-300"><%= editor[:errors][:historical_ack].to_sentence %></p>
+        <% end %>
+      </div>
+    <% end %>
     <div class="grid gap-1">
       <label class="text-sm font-medium" for="balance-amount">Amount</label>
       <input class="ui-field" type="text" inputmode="decimal" id="balance-amount" name="amount" value="<%= editor[:amount] %>" <% if editor[:amount].blank? %>placeholder="$1,000"<% end %> aria-invalid="<%= editor[:errors]&.[](:amount).present? %>">
@@ -18,7 +29,7 @@
       <% end %>
     </div>
     <div class="flex flex-col gap-2 sm:flex-row">
-      <button class="ui-button" type="submit" data-turbo-submits-with="Saving…">Save balance</button>
+      <button class="ui-button" type="submit" data-turbo-submits-with="Saving…"><%= editor[:account]&.brokerage? ? "Save cash" : "Save balance" %></button>
       <%= link_to "Cancel", assets_path(on: @on, group: @group), class: "ui-button-secondary" %>
     </div>
   <% end %>

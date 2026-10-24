@@ -13,6 +13,6 @@ class SecuritiesController < ApplicationController
 
   private
     def security_params
-      params.require(:security).permit(:ticker, :identifier, :currency)
+      params.require(:security).permit(:ticker, :note, :currency)
     end
 end

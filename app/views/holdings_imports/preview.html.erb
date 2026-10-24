@@ -1,0 +1,47 @@
+<% content_for :title, "Preview holdings import" %>
+<%= render "shared/page_header",
+      title: "Preview holdings import",
+      purpose: "Confirm every proposed change for #{@account.name} before anything is saved." %>
+
+<section class="ui-card mt-4" data-section="holdings-import-preview">
+  <p class="text-sm">Target account: <%= @account.name %>. File: <%= @draft["filename"] %>. Session date: <%= @draft["captured_on"] %>.</p>
+  <ul class="mt-3 grid gap-3">
+    <% @planned.each do |row| %>
+      <li class="rounded-md border border-slate-200 p-3 dark:border-slate-700">
+        <p class="font-medium">Row <%= row.line %> · <%= row.ticker %> · <%= row.observed_on %></p>
+        <p class="text-sm">Quantity <%= row.quantity %> · Cost basis <%= row.cost_basis %> · Price <%= row.price %></p>
+        <p class="text-sm">Outcome: <%= row.outcomes.to_sentence.presence || "error" %></p>
+        <% if row.previous_note.present? || row.note.present? %>
+          <p class="text-sm">Shared note <%= row.previous_note.presence || "(none)" %> → <%= row.note.presence || "(unchanged)" %></p>
+        <% end %>
+        <% if row.price_conflict? %>
+          <p class="text-sm">Saved price <%= row.saved_price %> would become <%= row.price %> for every account holding <%= row.ticker %>.</p>
+        <% end %>
+        <% if row.errors.any? %>
+          <p class="text-sm text-red-700 dark:text-red-300"><%= row.errors.to_sentence %></p>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+
+  <%= form_with url: confirm_account_holdings_import_path(@account), class: "mt-4 grid gap-3" do %>
+    <%= hidden_field_tag :fingerprint, @fingerprint %>
+    <% @planned.select(&:price_conflict?).each do |row| %>
+      <label class="flex min-h-11 items-center gap-2 text-sm">
+        <input type="checkbox" name="authorize_price[]" value="<%= row.price_key %>">
+        Replace <%= row.ticker %> <%= row.observed_on %> price <%= row.saved_price %> with <%= row.price %>
+      </label>
+    <% end %>
+    <% if @planned.any? { |row| row.observed_on && row.observed_on < Date.current } %>
+      <div class="rounded-md border border-amber-400 bg-amber-50 p-3 dark:border-amber-600 dark:bg-amber-950" role="alert">
+        <p class="text-sm font-medium">Some rows use a past observation date: <%= @planned.select { |row| row.observed_on && row.observed_on < Date.current }.map { |row| "#{row.line} (#{row.observed_on})" }.to_sentence %>.</p>
+        <label class="mt-2 flex min-h-11 items-center gap-2 text-sm">
+          <input type="checkbox" name="historical_ack" value="1">
+          I intend to record these historical observations
+        </label>
+      </div>
+    <% end %>
+    <button class="ui-button" type="submit" data-turbo-submits-with="Importing…">Confirm import</button>
+  <% end %>
+  <%= button_to "Cancel", cancel_account_holdings_import_path(@account), method: :delete, class: "ui-button-secondary mt-2" %>
+</section>
