@@ -20,10 +20,12 @@ class AccountTypeBehaviorTest < ActionDispatch::IntegrationTest
 
     get assets_path(on: "2026-03-15", balance: checking.id)
 
-    assert_select "#update-balance-#{checking.id}.ui-button"
+    assert_select "#update-balance-#{checking.id}.ui-button-quiet"
     assert_select "input[name=amount][value=?]", "1250.0"
     assert_select "input[name=observed_on][value=?]", "2026-03-15"
     assert_select "button", text: "Save balance"
+    assert_select "[data-section=observation-status]", text: /Verified/
+    assert_select "[data-controller=reveal-panel][data-reveal-panel-focus-value=balance-editor-title]"
   end
 
   test "a brokerage with no cash records shows no cash row and counts cash as zero" do
@@ -61,7 +63,7 @@ class AccountTypeBehaviorTest < ActionDispatch::IntegrationTest
   test "recording brokerage cash uses the Record cash action and the Save cash control" do
     get assets_path(on: "2026-03-15", balance: @brokerage.id)
 
-    assert_select "#record-cash-#{@brokerage.id}.ui-button-secondary"
+    assert_select "#record-cash-#{@brokerage.id}.ui-button-quiet"
     assert_select "button", text: "Save cash"
 
     post holding_balances_path, params: {

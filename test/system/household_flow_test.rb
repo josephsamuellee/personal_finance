@@ -40,18 +40,22 @@ class HouseholdFlowTest < ApplicationSystemTestCase
     PositionObservation.revise_current!({ account: brokerage, security: voo }, observed_on: Date.new(2026, 3, 15), updated_by: user, quantity: 50, cost_basis: 100)
     PositionObservation.revise_current!({ account: other, security: qqq }, observed_on: Date.new(2026, 3, 15), updated_by: user, quantity: 3, cost_basis: 20)
     visit assets_path(on: "2026-10-21")
-    assert_text "Carried forward from 2026-03-15"
+    assert_no_text "Carried forward from 2026-03-15"
     click_on "VOO"
-    fill_in "editor-quantity", with: "50"
+    assert_text "Carried forward from 2026-03-15"
+    fill_in "editor-quantity", with: "51"
     fill_in "editor-basis", with: "100"
+    check "I intend to record this historical observation"
     click_on "New observation"
     assert_text "Verified"
+    assert_no_text "Carried forward from 2026-03-15"
+    click_on "QQQ"
     assert_text "Carried forward from 2026-03-15"
 
     MarketPrice.create!(security: voo, amount: 20, currency: "USD", market_on: Date.new(2026, 3, 1), retrieved_at: Time.current, source: "manual", entered_by: user)
     click_on "Refresh Prices"
     assert_text "Price refresh failed"
-    assert_equal 50, PositionObservation.current_on({ account: brokerage, security: voo }, Date.new(2026, 10, 21)).quantity
+    assert_equal 51, PositionObservation.current_on({ account: brokerage, security: voo }, Date.new(2026, 10, 21)).quantity
     state, = PositionObservation.state_on({ account: other, security: qqq }, Date.new(2026, 10, 21))
     assert_equal :carried_forward, state
   end

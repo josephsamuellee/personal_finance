@@ -44,7 +44,8 @@
             <h2 class="font-semibold"><%= account.name %></h2>
             <p class="ui-money font-semibold"><%= card[:incomplete] ? "Incomplete" : money(card[:amount]) %></p>
           </div>
-          <p class="text-sm"><%= observation_label(card[:state], card[:row]&.observed_on) %></p>
+          <% account_status = observation_label(card[:state], card[:row]&.observed_on, compact: true) %>
+          <% if account_status.present? %><p class="text-sm"><%= account_status %></p><% end %>
           <ul class="mt-3 grid gap-2">
             <% if card[:show_cash_row] %>
               <li class="flex items-baseline justify-between gap-3 pl-4">
@@ -58,16 +59,17 @@
                 <%= link_to position[:security].ticker, assets_path(on: @on, edit: edit_key, group: @group), id: "holding-open-#{edit_key}", class: "ui-link" %>
                 <span class="ui-money"><%= position[:market_value].nil? ? "Unknown" : money(position[:market_value]) %></span>
               </li>
-              <li class="pl-4 text-sm"><%= observation_label(position[:state], position[:row]&.observed_on) %></li>
+              <% holding_status = observation_label(position[:state], position[:row]&.observed_on, compact: true) %>
+              <% if holding_status.present? %><li class="pl-4 text-sm"><%= holding_status %></li><% end %>
             <% end %>
           </ul>
-          <div class="mt-3 flex flex-col items-start gap-2">
+          <div class="mt-3 flex w-full flex-col gap-2">
             <% if account.brokerage? %>
               <%= render "accounts/brokerage_actions", account:, on: @on, group: @group, id_suffix: "-#{account.id}" %>
             <% elsif account.liquid_cash? %>
-              <%= link_to "Update balance", assets_path(on: @on, balance: account.id, group: @group), class: "ui-button", id: "update-balance-#{account.id}" %>
+              <%= link_to "Update balance", assets_path(on: @on, balance: account.id, group: @group), class: "ui-button-quiet", id: "update-balance-#{account.id}" %>
             <% else %>
-              <%= link_to "Update balance", assets_path(on: @on, balance: account.id, group: @group), class: "ui-button-secondary", id: "update-balance-#{account.id}" %>
+              <%= link_to "Update balance", assets_path(on: @on, balance: account.id, group: @group), class: "ui-button-quiet", id: "update-balance-#{account.id}" %>
             <% end %>
           </div>
         </article>

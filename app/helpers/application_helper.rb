@@ -29,10 +29,10 @@ module ApplicationHelper
     tag.span(number_to_currency(amount), class: "ui-money")
   end
 
-  def observation_label(state, date = nil)
+  def observation_label(state, date = nil, compact: false)
     case state.to_sym
     when :verified then "Verified"
-    when :carried_forward then "Carried forward from #{date}"
+    when :carried_forward then compact ? nil : "Carried forward from #{date}"
     else "Unknown"
     end
   end

@@ -1,8 +1,5 @@
-<section class="ui-card mt-4" role="dialog" aria-modal="true" aria-labelledby="balance-editor-title">
-  <h3 id="balance-editor-title" class="font-semibold"><%= editor[:account]&.name || "Balance" %></h3>
-  <% if editor[:state] %>
-    <p><%= observation_label(editor[:state], editor[:row]&.observed_on) %></p>
-  <% end %>
+<section class="ui-card mt-4" role="dialog" aria-modal="true" aria-labelledby="balance-editor-title" data-controller="reveal-panel" data-reveal-panel-focus-value="balance-editor-title">
+  <h3 id="balance-editor-title" class="font-semibold" tabindex="-1"><%= editor[:account]&.name || "Balance" %></h3>
   <%= form_with url: holding_balances_path, class: "mt-3 grid gap-3" do %>
     <%= hidden_field_tag :account_id, editor[:account]&.id %>
     <div class="grid gap-1">
@@ -32,5 +29,11 @@
       <button class="ui-button" type="submit" data-turbo-submits-with="Saving…"><%= editor[:account]&.brokerage? ? "Save cash" : "Save balance" %></button>
       <%= link_to "Cancel", assets_path(on: @on, group: @group), class: "ui-button-secondary" %>
     </div>
+  <% end %>
+  <% if editor[:state] %>
+    <footer class="mt-4 border-t border-slate-200 pt-3 text-sm dark:border-slate-700" data-section="observation-status">
+      <h3 class="font-medium">Observation</h3>
+      <p><%= observation_label(editor[:state], editor[:row]&.observed_on) %></p>
+    </footer>
   <% end %>
 </section>

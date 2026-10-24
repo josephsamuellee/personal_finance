@@ -19,7 +19,13 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
     }
     follow_redirect!
     assert_includes response.body, "Verified"
-    assert_includes response.body, "Carried forward from 2026-03-15"
+    assert_not_includes response.body, "Carried forward from 2026-03-15"
+    cash = Account.create!(name: "Wallet", account_type: "checking", currency: "USD")
+    get assets_path(on: "2026-10-21")
+    assert_select "#account-card-#{cash.id}", text: /Unknown/
+    assert_select "#account-card-#{@other.id}", text: /Carried forward from/, count: 0
+    get assets_path(on: "2026-10-21", edit: "#{@other.id}-#{@qqq.id}")
+    assert_select "[data-section=observation-status]", text: /Carried forward from 2026-03-15/
     state, = PositionObservation.state_on({ account: @other, security: @qqq }, Date.new(2026, 10, 21))
     assert_equal :carried_forward, state
   end
@@ -55,7 +61,9 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
 
     get assets_path(on: "2026-10-21", edit:)
     assert_includes response.body, "Pending save: New observation"
-    assert_includes response.body, "Carried forward from 2026-03-15"
+    assert_select "[data-section=observation-status]", text: /Carried forward from 2026-03-15/
+    assert_select "[data-controller~='reveal-panel'][data-reveal-panel-focus-value=holding-editor-title]"
+    assert_select "#account-card-#{@account.id}", text: /Carried forward from/, count: 0
   end
 
   test "the holding editor prefills the exact-date price and shows when none is saved" do
@@ -136,10 +144,11 @@ class HoldingsRequestTest < ActionDispatch::IntegrationTest
     assert_operator response.body.index('data-section="reporting-date"'), :<, response.body.index('data-section="accounts"')
     assert_select "#account-card-#{@account.id} a.ui-link", text: "VOO"
     assert_select "#account-card-#{cash.id}", text: /\$25\.00/
-    assert_select "#account-card-#{cash.id} a.ui-button", text: "Update balance"
+    assert_select "#account-card-#{cash.id} a.ui-button-quiet", text: "Update balance"
     assert_select "#account-card-#{cash.id} a", text: "Add holding", count: 0
-    assert_select "#account-card-#{@account.id} a.ui-button", text: "Add Holding"
-    assert_select "#account-card-#{@account.id} a.ui-button-secondary", text: "Record Cash"
+    assert_select "#account-card-#{@account.id} a.ui-button-quiet", text: "Add Holding"
+    assert_select "#account-card-#{@account.id} #add-holding-#{@account.id}.ui-button", count: 0
+    assert_select "#account-card-#{@account.id} a.ui-button-quiet", text: "Record Cash"
 
     get asset_maintenance_path(form: "security")
     assert_select "input[name=?]", "security[ticker]"

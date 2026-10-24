@@ -1,19 +1,22 @@
 <% suffix = local_assigns.fetch(:id_suffix, "") %>
 <% on = local_assigns.fetch(:on, Date.current) %>
-<nav class="mt-3 grid grid-cols-2 gap-2" aria-label="Brokerage actions" data-section="brokerage-actions">
-  <%= link_to "Add Holding", new_account_holding_path(account),
-        class: "ui-button min-h-11 w-full", id: "add-holding#{suffix}" %>
-  <%= link_to "Update Holdings via CSV", new_account_holdings_import_path(account),
-        class: "ui-button-secondary min-h-11 w-full", id: "update-holdings-csv#{suffix}" %>
-  <%= link_to "Record Cash", assets_path(on:, balance: account.id, group: local_assigns[:group]),
-        class: "ui-button-secondary min-h-11 w-full", id: "record-cash#{suffix}" %>
-  <%= button_to "Update prices", refresh_prices_account_path(account, on:), method: :post,
-        class: "ui-button-secondary min-h-11 w-full",
-        id: "update-prices#{suffix}",
-        form: { class: "w-full", data: { turbo_submits_with: "Updating prices…" } } %>
-  <%= button_to "Remove Account", account_path(account), method: :patch, params: { archive: "1" },
-        class: "ui-button-secondary min-h-11 w-full text-red-800 dark:text-red-300",
-        id: "remove-account#{suffix}",
-        form: { class: "w-full", data: { turbo_confirm: "Archive this account? History is kept." } } %>
-  <div class="min-h-11" aria-hidden="true" data-empty-cell></div>
-</nav>
+<div class="mt-3" data-section="brokerage-actions">
+  <nav class="grid grid-cols-2 gap-2" aria-label="Brokerage actions">
+    <%= link_to "Add Holding", new_account_holding_path(account),
+          class: "ui-button-quiet", id: "add-holding#{suffix}" %>
+    <%= link_to "Update Holdings via CSV", new_account_holdings_import_path(account),
+          class: "ui-button-quiet", id: "update-holdings-csv#{suffix}" %>
+    <%= link_to "Record Cash", assets_path(on:, balance: account.id, group: local_assigns[:group]),
+          class: "ui-button-quiet", id: "record-cash#{suffix}" %>
+    <%= button_to "Update prices", refresh_prices_account_path(account, on:), method: :post,
+          class: "ui-button-quiet",
+          id: "update-prices#{suffix}",
+          form: { class: "w-full", data: { turbo_submits_with: "Updating prices…" } } %>
+  </nav>
+  <div class="mt-2" data-section="brokerage-archive">
+    <%= button_to "Remove Account", account_path(account), method: :patch, params: { archive: "1" },
+          class: "ui-button-secondary min-h-11 w-full text-red-800 dark:border-red-300 dark:text-red-300",
+          id: "remove-account#{suffix}",
+          form: { class: "w-full", data: { turbo_confirm: "Archive this account? History is kept." } } %>
+  </div>
+</div>

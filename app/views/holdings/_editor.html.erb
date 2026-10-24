@@ -7,8 +7,8 @@
    end %>
 <section class="ui-card mt-4 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-30 max-lg:max-h-[85vh] max-lg:overflow-y-auto max-lg:rounded-t-xl max-lg:pb-[env(safe-area-inset-bottom)]"
          role="dialog" aria-modal="true" aria-labelledby="holding-editor-title"
-         data-controller="sheet" data-sheet-return-focus-value="holding-open-<%= edit_key %>">
-  <h2 id="holding-editor-title" class="text-lg font-semibold"><%= editor[:security].ticker %></h2>
+         data-controller="sheet reveal-panel" data-reveal-panel-focus-value="holding-editor-title" data-sheet-return-focus-value="holding-open-<%= edit_key %>">
+  <h2 id="holding-editor-title" class="text-lg font-semibold" tabindex="-1"><%= editor[:security].ticker %></h2>
   <dl class="mt-3 grid gap-1 text-sm">
     <div><dt class="inline font-medium">Ticker</dt> <dd class="inline"><%= editor[:security].ticker %></dd></div>
     <% if editor[:security].identifier.present? %>
@@ -18,7 +18,6 @@
     <div><dt class="inline font-medium">Latest valuation</dt> <dd class="inline"><%= market_value.nil? ? "Unknown" : money(market_value) %><% if price %> from the price dated <%= price.market_on %><% end %></dd></div>
     <div><dt class="inline font-medium">Prepopulated from</dt> <dd class="inline"><%= editor[:row] ? "observation on #{editor[:row].observed_on}" : "no earlier observation" %></dd></div>
     <div><dt class="inline font-medium">Last verified</dt> <dd class="inline"><%= editor[:last_verified_on] || "Not verified yet" %></dd></div>
-    <div><dt class="inline font-medium">Status</dt> <dd class="inline"><%= observation_label(editor[:state], editor[:row]&.observed_on) %></dd></div>
   </dl>
   <%= form_with url: holding_positions_path, class: "mt-4 grid gap-3", data: { controller: "holding-editor" } do %>
     <%= hidden_field_tag :account_id, editor[:account].id %>
@@ -96,4 +95,8 @@
       <button class="ui-button-secondary" type="submit" data-turbo-submits-with="Saving…">Add holding observation</button>
     <% end %>
   </details>
+  <footer class="mt-4 border-t border-slate-200 pt-3 text-sm dark:border-slate-700" data-section="observation-status">
+    <h3 class="font-medium">Observation</h3>
+    <p><%= observation_label(editor[:state], editor[:row]&.observed_on) %></p>
+  </footer>
 </section>
