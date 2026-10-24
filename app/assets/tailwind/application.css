@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+  .ui-field {
+    @apply min-h-11 w-full rounded-md border-2 border-slate-700 bg-white px-3 py-2 text-base text-slate-900 outline-none placeholder:text-slate-500 focus:border-sky-800 focus:ring-2 focus:ring-sky-800 dark:border-slate-300 dark:bg-slate-800 dark:text-slate-50 dark:placeholder:text-slate-400 dark:focus:border-sky-300 dark:focus:ring-sky-300;
+  }
+
+  .ui-button {
+    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border-2 border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-sky-800 focus-visible:ring-offset-2 active:bg-slate-950 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500 dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white dark:focus-visible:ring-sky-300 dark:active:bg-slate-300 dark:disabled:border-slate-600 dark:disabled:bg-slate-700 dark:disabled:text-slate-400;
+  }
+
+  .ui-button-secondary {
+    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border-2 border-slate-700 bg-white px-4 text-sm font-semibold text-slate-900 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-sky-800 focus-visible:ring-offset-2 active:bg-slate-200 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500 dark:border-slate-300 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700 dark:focus-visible:ring-sky-300 dark:active:bg-slate-600 dark:disabled:border-slate-600 dark:disabled:bg-slate-700 dark:disabled:text-slate-400;
+  }
+
+  .ui-nav {
+    @apply flex min-h-11 min-w-11 w-full items-center justify-center rounded-md border-2 border-slate-700 bg-white px-2 py-2 text-center text-xs font-semibold text-slate-900 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-sky-800 focus-visible:ring-offset-2 active:bg-slate-200 sm:text-sm dark:border-slate-300 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700 dark:focus-visible:ring-sky-300 dark:active:bg-slate-600;
+  }
+
+  a.ui-button,
+  a.ui-button-secondary,
+  a.ui-nav {
+    margin: 4px;
+    --tw-shadow: 0 0 0 4px var(--color-slate-200);
+    box-shadow: var(--tw-inset-shadow, 0 0 #0000), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+  }
+
+  .dark a.ui-button,
+  .dark a.ui-button-secondary,
+  .dark a.ui-nav {
+    --tw-shadow: 0 0 0 4px var(--color-slate-700);
+  }
+
+  a.ui-button:focus-visible,
+  a.ui-button-secondary:focus-visible,
+  a.ui-nav:focus-visible {
+    --tw-ring-offset-color: transparent;
+    --tw-ring-offset-width: 8px;
+    --tw-ring-offset-shadow: var(--tw-ring-inset,) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+    box-shadow: var(--tw-inset-shadow, 0 0 #0000), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+
+  .ui-nav-current {
+    @apply border-slate-900 bg-slate-900 text-white hover:bg-slate-800 dark:border-slate-100 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white;
+  }
+
+  .ui-link {
+    @apply font-medium text-sky-800 underline underline-offset-2 dark:text-sky-300;
+  }
+
+  .ui-label {
+    @apply text-sm font-medium text-slate-600 dark:text-slate-300;
+  }
+
+  .ui-card {
+    @apply min-w-0 rounded-lg border border-slate-200 bg-white p-4 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100;
+  }
+
+  .ui-money {
+    @apply tabular-nums;
+  }
+
+  .ui-chart {
+    overflow: hidden;
+    min-width: 0;
+    background: var(--color-slate-50);
+    --chart-bar: var(--color-sky-700);
+    --chart-line: var(--color-slate-900);
+    --chart-axis: var(--color-slate-400);
+  }
+
+  .dark .ui-chart {
+    background: var(--color-slate-950);
+    --chart-bar: var(--color-sky-300);
+    --chart-line: var(--color-slate-100);
+    --chart-axis: var(--color-slate-500);
+  }
+}

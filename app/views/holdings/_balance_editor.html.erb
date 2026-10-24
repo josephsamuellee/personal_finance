@@ -1,0 +1,25 @@
+<section class="ui-card mt-4" role="dialog" aria-modal="true" aria-labelledby="balance-editor-title">
+  <h3 id="balance-editor-title" class="font-semibold"><%= editor[:account]&.name || "Balance" %></h3>
+  <% if editor[:state] %>
+    <p><%= observation_label(editor[:state], editor[:row]&.observed_on) %></p>
+  <% end %>
+  <%= form_with url: holding_balances_path, class: "mt-3 grid gap-3" do %>
+    <%= hidden_field_tag :account_id, editor[:account]&.id %>
+    <%= hidden_field_tag :gesture, "verify" %>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="balance-date">Observation date</label>
+      <input class="ui-field" type="date" id="balance-date" name="observed_on" value="<%= editor[:observed_on] %>">
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm font-medium" for="balance-amount">Amount</label>
+      <input class="ui-field" type="text" inputmode="decimal" id="balance-amount" name="amount" value="<%= editor[:amount] %>" <% if editor[:amount].blank? %>placeholder="$1,000"<% end %> aria-invalid="<%= editor[:errors]&.[](:amount).present? %>">
+      <% if editor[:errors]&.[](:amount).present? %>
+        <p class="text-sm text-red-700 dark:text-red-300"><%= editor[:errors][:amount].to_sentence %></p>
+      <% end %>
+    </div>
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <button class="ui-button" type="submit" data-turbo-submits-with="Saving…">Save balance</button>
+      <%= link_to "Cancel", assets_path(on: @on, group: @group), class: "ui-button-secondary" %>
+    </div>
+  <% end %>
+</section>

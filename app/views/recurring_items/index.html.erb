@@ -1,0 +1,14 @@
+<% content_for :title, "Recurring items" %>
+<%= render "shared/page_header",
+      title: "Recurring items",
+      purpose: "List bills and income that repeat.",
+      primary: link_to("Add a recurring item", new_recurring_item_path, class: "ui-button") %>
+<% if @items.empty? %>
+  <%= render "shared/empty_state", title: "No recurring items yet", message: "Add a bill or paycheck so upcoming obligations can appear on Home.", links: link_to("Add a recurring item", new_recurring_item_path, class: "ui-button") %>
+<% else %>
+  <ul class="grid gap-3">
+    <% @items.each do |item| %>
+      <li class="ui-card"><%= item.name %> <%= item.direction %> <%= item.treatment %> <%= money(item.amount) %></li>
+    <% end %>
+  </ul>
+<% end %>

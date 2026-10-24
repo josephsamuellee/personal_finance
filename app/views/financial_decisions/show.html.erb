@@ -1,0 +1,13 @@
+<h1 class="text-xl font-semibold"><%= @decision.description %></h1>
+<p>Decision date <%= @decision.decided_on %></p>
+<p><%= @decision.rationale %></p>
+<p><%= @decision.alternatives %></p>
+<p><%= @decision.expected_effect %></p>
+<p><%= @decision.outcome %></p>
+<p><%= link_to "Edit", edit_decision_path(@decision), class: "ui-button-secondary" %></p>
+<h2 class="mt-4 font-semibold">Revision history</h2>
+<ul>
+  <% @decision.record_revisions.order(:revision_number).each do |revision| %>
+    <li>Previous rationale <%= revision.previous_values["rationale"] %></li>
+  <% end %>
+</ul>

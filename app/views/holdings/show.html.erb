@@ -1,0 +1,28 @@
+<h1 class="text-xl font-semibold"><%= @security.ticker %> history</h1>
+<p><%= observation_label(@state, @current&.observed_on) %></p>
+<div data-controller="chart" data-chart-points-value="<%= json_escape(Reporting::Series.detailed(@observations).to_json) %>" class="h-64 w-full"></div>
+<ul>
+  <% @observations.each do |observation| %>
+    <li>
+      <%= observation.observed_on %> sequence <%= observation.sequence %> quantity <%= observation.quantity %>
+      <% if observation.reason.present? %>(<%= observation.reason %>)<% end %>
+      <%= form_with url: holding_positions_path do %>
+        <%= hidden_field_tag :id, observation.id %>
+        <%= hidden_field_tag :account_id, @account.id %>
+        <%= hidden_field_tag :security_id, @security.id %>
+        <%= hidden_field_tag :gesture, "correct" %>
+        <%= hidden_field_tag :observed_on, observation.observed_on %>
+        <%= number_field_tag :quantity, observation.quantity, step: "0.00000001", class: "ui-field" %>
+        <%= text_field_tag :cost_basis, observation.cost_basis, inputmode: "decimal", class: "ui-field", placeholder: observation.cost_basis.blank? ? "$1,000" : nil %>
+        <%= text_field_tag :revision_reason, nil, placeholder: "Reason for correction", class: "ui-field", aria: { label: "Reason for correction" } %>
+        <%= submit_tag "Correct this observation", class: "ui-button", data: { turbo_submits_with: "Saving…" } %>
+      <% end %>
+    </li>
+  <% end %>
+</ul>
+<h2 class="mt-4 font-semibold">Revision history</h2>
+<ul>
+  <% @observations.flat_map(&:record_revisions).sort_by(&:revision_number).each do |revision| %>
+    <li>Previous <%= revision.previous_values %> by <%= revision.user&.email_address %></li>
+  <% end %>
+</ul>

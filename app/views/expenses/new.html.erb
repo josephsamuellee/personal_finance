@@ -1,0 +1,4 @@
+<% content_for :title, "Quick Expense" %>
+<h1 class="text-xl font-semibold">Quick Expense</h1>
+<% if flash[:notice] %><p>You can enter another expense.</p><% end %>
+<%= render "form", expense: @expense %>

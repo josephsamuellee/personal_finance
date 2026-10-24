@@ -1,0 +1,12 @@
+<h1 class="text-xl font-semibold">Edit recurring item</h1>
+<%= form_with model: @item, class: "grid gap-2" do |form| %>
+  <%= form.text_field :name %>
+  <%= form.select :direction, RecurringItem::DIRECTIONS %>
+  <%= form.label :amount %>
+  <%= form.currency_field :amount %>
+  <%= form.select :frequency, RecurringItem::FREQUENCIES %>
+  <%= form.date_field :starts_on %>
+  <%= form.date_field :ends_on %>
+  <%= form.select :treatment, RecurringItem::TREATMENTS %>
+  <%= form.submit "Save" %>
+<% end %>

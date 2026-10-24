@@ -1,0 +1,6 @@
+<% if flash[:notice] %>
+  <p role="status" class="mb-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-50"><%= flash[:notice] %></p>
+<% end %>
+<% if flash[:alert] %>
+  <p role="alert" class="mb-4 rounded-md border border-amber-400 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-50"><%= flash[:alert] %></p>
+<% end %>

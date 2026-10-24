@@ -1,0 +1,7 @@
+<div class="grid gap-1">
+  <label class="mb-1 block text-sm font-medium" for="<%= name %>"><%= label %></label>
+  <%= yield %>
+  <% if local_assigns[:error].present? %>
+    <p id="<%= name %>_error" class="text-sm text-red-700 dark:text-red-300"><%= error %></p>
+  <% end %>
+</div>

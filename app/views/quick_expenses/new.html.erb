@@ -1,0 +1,28 @@
+<% content_for :title, "Quick Expense" %>
+<%= render "shared/page_header", title: "Quick Expense", purpose: "Record one spending expense. Amount and category are required." %>
+<%= form_with model: @expense, url: quick_expense_path, class: "mt-4 grid max-w-lg gap-3" do |form| %>
+  <% if @expense.errors.any? %>
+    <ul role="alert">
+      <% @expense.errors.full_messages.each do |message| %><li><%= message %></li><% end %>
+    </ul>
+  <% end %>
+  <%= render layout: "shared/field", locals: { label: "Amount", name: "expense_amount", error: @expense.errors[:amount].to_sentence.presence } do %>
+    <%= form.currency_field :amount, value: params.dig(:expense, :amount).presence || @expense.amount, required: true %>
+  <% end %>
+  <%= render layout: "shared/field", locals: { label: "Category", name: "expense_category_name", error: @expense.errors[:category_name].to_sentence.presence } do %>
+    <%= form.text_field :category_name, maxlength: 80, required: true %>
+  <% end %>
+  <%= render layout: "shared/field", locals: { label: "Date", name: "expense_spent_on" } do %>
+    <%= form.date_field :spent_on, value: params.dig(:expense, :spent_on).presence || @expense.spent_on, min: "2000-01-01", max: "2100-12-31", required: true %>
+  <% end %>
+  <%= render layout: "shared/field", locals: { label: "Merchant", name: "expense_merchant" } do %>
+    <%= form.text_field :merchant, maxlength: 120 %>
+  <% end %>
+  <%= render layout: "shared/field", locals: { label: "Notes", name: "expense_notes" } do %>
+    <%= form.text_area :notes, maxlength: 2000 %>
+  <% end %>
+  <%= render layout: "shared/field", locals: { label: "Receipt, optional", name: "expense_receipts" } do %>
+    <%= form.file_field :receipts, multiple: true, accept: "image/*,.pdf" %>
+  <% end %>
+  <%= render "shared/button", label: "Save" %>
+<% end %>

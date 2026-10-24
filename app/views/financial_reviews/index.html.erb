@@ -1,0 +1,45 @@
+<% content_for :title, "Review" %>
+<%= render "shared/page_header",
+      title: "Review",
+      purpose: "Save an optional snapshot of this month.",
+      primary: link_to("Save a review", new_review_path, class: "ui-button") %>
+<div class="grid gap-4 md:grid-cols-2">
+  <section id="save-review" class="ui-card md:col-span-2">
+    <p class="text-sm text-slate-600 dark:text-slate-300">Opening this page does not save a review. Reviews are optional.</p>
+    <%= link_to "Save a review", new_review_path, class: "ui-button mt-3" %>
+  </section>
+
+  <section id="saved-reviews" class="ui-card">
+    <h2 class="font-semibold">Saved reviews</h2>
+    <% if @reviews.empty? %>
+      <p class="mt-2 text-sm">No reviews saved yet. Save a review when you want to freeze this month's numbers and a note.</p>
+    <% else %>
+      <ul class="mt-3 grid gap-2">
+        <% @reviews.each do |review| %>
+          <li><%= link_to review.review_on, review_path(review), class: "ui-link" %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+
+  <section id="decisions" class="ui-card">
+    <h2 class="font-semibold">Decisions</h2>
+    <% if @decisions.empty? %>
+      <p class="mt-2 text-sm">No decisions recorded yet. Write down a financial decision when you want to remember why it was made.</p>
+      <%= link_to "New decision", new_decision_path, class: "ui-button-secondary mt-3" %>
+    <% else %>
+      <ul class="mt-3 grid gap-2">
+        <% @decisions.each do |decision| %>
+          <li><%= link_to decision.description, decision_path(decision), class: "ui-link" %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </section>
+
+  <section id="review-links" class="ui-card md:col-span-2">
+    <div class="flex flex-col items-start gap-2">
+      <%= link_to "Decisions", decisions_path, class: "ui-button-secondary" %>
+      <%= link_to "Compare periods", compare_path, class: "ui-button-secondary" %>
+    </div>
+  </section>
+</div>

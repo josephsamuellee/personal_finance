@@ -1,0 +1,10 @@
+<h1 class="text-xl font-semibold">Edit savings target</h1>
+<%= form_with model: @goal, class: "grid gap-2" do |form| %>
+  <%= form.label :amount %>
+  <%= form.currency_field :amount %>
+  <%= form.date_field :starts_on %>
+  <%= form.date_field :ends_on %>
+  <%= form.text_area :reason %>
+  <%= form.date_field :review_on %>
+  <%= form.submit "Save" %>
+<% end %>

@@ -1,0 +1,95 @@
+<% content_for :title, "Assets" %>
+<% if @load_error %>
+  <%= render "shared/page_header", title: "Assets", purpose: "Update balances and holdings for the reporting date." %>
+  <%= render "shared/load_error" %>
+<% else %>
+  <% primary = if @accounts.empty? && @positions.empty? && @group.blank?
+       link_to("Add an account", new_account_path, class: "ui-button")
+     else
+       button_to("Refresh Prices", refresh_market_prices_path, method: :post, class: "ui-button", data: { turbo_submits_with: "Refreshing prices…" })
+     end %>
+  <%= render "shared/page_header",
+        title: "Assets",
+        purpose: "Update balances and holdings for the reporting date.",
+        primary: primary %>
+
+  <form class="mb-4 grid max-w-xs gap-2" action="<%= assets_path %>" method="get" data-section="reporting-date">
+    <label class="ui-label" for="reporting-date">Reporting date</label>
+    <input class="ui-field" type="date" id="reporting-date" name="on" value="<%= @on %>">
+    <% if @group.present? %><input type="hidden" name="group" value="<%= @group %>"><% end %>
+    <button class="ui-button-secondary" type="submit" data-turbo-submits-with="Showing date…">Show date</button>
+  </form>
+
+  <% if @accounts.empty? && @positions.empty? && @group.present? %>
+    <%= render "shared/empty_state",
+          kind: "filter",
+          title: "Nothing matches this view",
+          message: "No records match this view. Clear the filter to see the rest of the household." %>
+  <% elsif @accounts.empty? && @positions.empty? %>
+    <%= render "shared/empty_state",
+          kind: "empty",
+          title: "No holdings recorded yet",
+          message: "Add your first account, investment, or balance to start tracking portfolio value.",
+          links: safe_join([
+            link_to("Add an account", new_account_path, class: "ui-button"),
+            link_to("Add an investment holding", asset_maintenance_path(form: "security"), class: "ui-button-secondary"),
+            link_to("Record a balance", new_account_path, class: "ui-button-secondary")
+          ]) %>
+  <% else %>
+    <div class="grid gap-4 md:grid-cols-2" data-section="accounts">
+      <% @cards.each do |card| %>
+        <% account = card[:account] %>
+        <article class="ui-card" id="account-card-<%= account.id %>">
+          <div class="flex items-baseline justify-between gap-3">
+            <h2 class="font-semibold"><%= account.name %></h2>
+            <p class="ui-money font-semibold"><%= card[:incomplete] ? "Incomplete" : money(card[:amount]) %></p>
+          </div>
+          <p class="text-sm"><%= observation_label(card[:state], card[:row]&.observed_on) %></p>
+          <ul class="mt-3 grid gap-2">
+            <% card[:holdings].each do |position| %>
+              <% edit_key = "#{position[:account].id}-#{position[:security].id}" %>
+              <li class="flex items-baseline justify-between gap-3 pl-4">
+                <%= link_to position[:security].ticker, assets_path(on: @on, edit: edit_key, group: @group), id: "holding-open-#{edit_key}", class: "ui-link" %>
+                <span class="ui-money"><%= position[:market_value].nil? ? "Unknown" : money(position[:market_value]) %></span>
+              </li>
+              <li class="pl-4 text-sm"><%= observation_label(position[:state], position[:row]&.observed_on) %></li>
+            <% end %>
+          </ul>
+          <div class="mt-3 flex flex-col items-start gap-2">
+            <%= link_to "Update balance", assets_path(on: @on, balance: account.id, group: @group), class: "ui-button-secondary" %>
+            <%= link_to "Add holding", asset_maintenance_path(form: "security", account_id: account.id), class: "ui-button-secondary" %>
+          </div>
+        </article>
+      <% end %>
+    </div>
+
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
+      <section class="ui-card" aria-labelledby="maintain-accounts">
+        <h2 id="maintain-accounts" class="font-semibold">Maintain accounts</h2>
+        <div class="mt-3 flex flex-col items-start gap-2">
+          <%= link_to "Add an account", new_account_path, class: "ui-button-secondary" %>
+          <%= link_to "Edit account", accounts_path, class: "ui-button-secondary" %>
+          <%= link_to "Manage accounts", accounts_path, class: "ui-button-secondary" %>
+        </div>
+      </section>
+      <section class="ui-card" aria-labelledby="maintain-securities">
+        <h2 id="maintain-securities" class="font-semibold">Maintain securities</h2>
+        <div class="mt-3 flex flex-col items-start gap-2">
+          <%= link_to "Add a security", asset_maintenance_path(form: "security"), class: "ui-button-secondary" %>
+          <%= link_to "Record a manual price", asset_maintenance_path(form: "price"), class: "ui-button-secondary" %>
+          <%= link_to "Record a corporate action", asset_maintenance_path(form: "action"), class: "ui-button-secondary" %>
+          <%= link_to "See all securities", asset_maintenance_path, class: "ui-button-secondary" %>
+        </div>
+      </section>
+    </div>
+
+    <% if @balance_editor %>
+      <%= render "balance_editor", editor: @balance_editor %>
+    <% elsif params[:balance] == "new" %>
+      <%= render "shared/empty_state", title: "Add an account first", message: "A balance is recorded on an account. Add an account, then come back to record it.", links: link_to("Add an account", new_account_path, class: "ui-button") %>
+    <% end %>
+    <% if @editor %>
+      <%= render "editor", editor: @editor %>
+    <% end %>
+  <% end %>
+<% end %>

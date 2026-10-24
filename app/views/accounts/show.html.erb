@@ -1,0 +1,7 @@
+<h1 class="text-xl font-semibold"><%= @account.name %></h1>
+<p><%= @account.account_type %> <%= @account.currency %></p>
+<ul>
+  <% @observations.each do |observation| %>
+    <li><%= observation.observed_on %> sequence <%= observation.sequence %> <%= money(observation.amount) %></li>
+  <% end %>
+</ul>

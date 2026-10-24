@@ -1,0 +1,26 @@
+<% content_for :title, "Import expenses" %>
+<%= render "shared/page_header",
+      title: "Import expenses",
+      purpose: "Bring in a CSV of spending after you choose this page.",
+      primary: nil %>
+<% if @batches.empty? %>
+  <%= render "shared/empty_state", title: "No imports yet", message: "Choose a CSV below to preview the first import. Nothing is saved until you confirm it." %>
+<% else %>
+  <ul class="mb-4">
+    <% @batches.each do |batch| %>
+      <li><%= batch.status %> <%= batch.created_at.to_date %></li>
+    <% end %>
+  </ul>
+<% end %>
+<%= form_with url: expense_imports_path, multipart: true, class: "mt-4 grid max-w-lg gap-3" do %>
+  <%= label_tag :file, "CSV file", class: "text-sm font-medium" %>
+  <%= file_field_tag :file, accept: "text/csv", required: true, class: "ui-field" %>
+  <fieldset>
+    <legend>Column mapping</legend>
+    <% %w[date amount category merchant notes kind].each do |column| %>
+      <%= label_tag "mapping_#{column}", column %>
+      <%= text_field_tag "mapping[#{column}]", column, id: "mapping_#{column}", class: "ui-field" %>
+    <% end %>
+  </fieldset>
+  <%= submit_tag "Preview import", class: "ui-button", data: { turbo_submits_with: "Previewing…" } %>
+<% end %>

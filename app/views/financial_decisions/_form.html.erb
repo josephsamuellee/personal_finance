@@ -1,0 +1,20 @@
+<%= form_with model: decision, url: decision.persisted? ? decision_path(decision) : decisions_path, class: "grid max-w-lg gap-2" do |form| %>
+  <% if decision.errors.any? %>
+    <ul><% decision.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+  <% end %>
+  <%= form.label :decided_on, "Decision date" %>
+  <%= form.date_field :decided_on, required: true %>
+  <%= form.label :description %>
+  <%= form.text_area :description, required: true %>
+  <%= form.label :rationale %>
+  <%= form.text_area :rationale, required: true %>
+  <%= form.label :alternatives, "Alternatives considered" %>
+  <%= form.text_area :alternatives, required: true %>
+  <%= form.label :expected_effect %>
+  <%= form.text_area :expected_effect, required: true %>
+  <%= form.label :review_on, "Review date" %>
+  <%= form.date_field :review_on %>
+  <%= form.label :outcome %>
+  <%= form.text_area :outcome %>
+  <%= form.submit "Save decision" %>
+<% end %>

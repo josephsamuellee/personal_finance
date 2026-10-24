@@ -1,0 +1,23 @@
+<h1 class="text-xl font-semibold">VOO benchmark</h1>
+<%= form_with url: benchmark_path, method: :get do %>
+  <%= date_field_tag :from, @from %>
+  <%= date_field_tag :to, @to %>
+  <%= label_tag :cash_flows_recorded, "External cash flows for this period are fully recorded" %>
+  <%= check_box_tag :cash_flows_recorded, "1", params[:cash_flows_recorded] == "1" %>
+  <%= submit_tag "Compare" %>
+<% end %>
+<section>
+  <h2>Change in portfolio value</h2>
+  <p><%= money(@value_change[:amount]) %></p>
+  <p><%= @value_change[:label] %></p>
+</section>
+<section>
+  <h2>Investment performance</h2>
+  <% if @performance[:available] %>
+    <p><%= @performance[:label] %></p>
+    <p>Portfolio return <%= number_to_percentage(@performance[:portfolio_return] * 100, precision: 2) %></p>
+    <p>VOO return <%= number_to_percentage(@performance[:voo_return] * 100, precision: 2) %></p>
+  <% else %>
+    <p><%= @performance[:label] %></p>
+  <% end %>
+</section>

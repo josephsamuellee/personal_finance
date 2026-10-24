@@ -1,0 +1,116 @@
+<% content_for :title, "Home" %>
+<%= render "shared/page_header",
+      title: "Home",
+      purpose: "See the household's current finances.",
+      primary: link_to("Record an expense", quick_expense_path, class: "ui-button") %>
+<% if @load_error %>
+  <%= render "shared/load_error" %>
+<% else %>
+  <div class="grid gap-4 md:grid-cols-2">
+    <section id="net-worth" class="ui-card md:col-span-2">
+      <h2 class="ui-label uppercase tracking-wide">Estimated net worth</h2>
+      <p class="text-3xl font-semibold"><%= @snapshot.incomplete? ? "Incomplete" : money(@snapshot.net_worth) %></p>
+      <p><%= @snapshot.quality_label %></p>
+    </section>
+
+    <section id="liquid-assets" class="ui-card">
+      <h2 class="ui-label uppercase tracking-wide">Liquid assets</h2>
+      <p class="text-2xl font-semibold"><%= money(@snapshot.liquid_assets) %></p>
+      <%= link_to "Open assets", assets_path, class: "ui-button-secondary mt-3" %>
+    </section>
+
+    <section id="tracked-spending" class="ui-card">
+      <h2 class="ui-label uppercase tracking-wide">Tracked spending</h2>
+      <ul class="mt-2 grid gap-2">
+        <li class="flex items-baseline justify-between gap-3">
+          <span>This month</span>
+          <span class="ui-money text-2xl font-semibold"><%= money(@month_spending) %></span>
+        </li>
+        <li class="flex items-baseline justify-between gap-3">
+          <span>Last month</span>
+          <span class="ui-money"><%= money(@previous_spending) %></span>
+        </li>
+      </ul>
+      <%= link_to "Open expenses", expenses_path(month: @on.strftime("%Y-%m")), class: "ui-button-secondary mt-3" %>
+    </section>
+
+    <section id="spending-chart" class="ui-card md:col-span-2">
+      <h2 class="ui-label uppercase tracking-wide">Spending, last 3 months</h2>
+      <div class="ui-chart mt-3 h-64 w-full" data-controller="chart" data-chart-mode-value="spending" data-chart-points-value="<%= json_escape(@spending_chart.to_json) %>"></div>
+    </section>
+
+    <section id="net-worth-history" class="ui-card md:col-span-2">
+      <h2 class="ui-label uppercase tracking-wide">Net worth history</h2>
+      <% if @history.blank? %>
+        <h3 class="mt-2 text-base font-semibold">No history yet</h3>
+        <p class="mt-1 text-sm">Record a balance or holding and this chart will show how net worth changes.</p>
+      <% else %>
+        <div class="ui-chart mt-3 h-64 w-full" data-controller="chart" data-chart-mode-value="net-worth" data-chart-points-value="<%= json_escape(@history.to_json) %>"></div>
+      <% end %>
+    </section>
+
+    <section id="three-month-average" class="ui-card">
+      <h2 class="ui-label uppercase tracking-wide">Three-month spending average</h2>
+      <% if @baseline[:months].blank? %>
+        <p class="mt-2 text-sm">Record expenses and the three-month average will appear here.</p>
+      <% else %>
+        <p class="mt-2 text-2xl font-semibold"><%= money(@baseline[:average]) %></p>
+        <ul class="mt-3 grid gap-2">
+          <% @baseline[:months].zip(@baseline[:totals]).each do |month, total| %>
+            <li class="flex items-baseline justify-between gap-3">
+              <span><%= month.strftime("%B %Y") %></span>
+              <span class="ui-money"><%= money(total) %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+
+    <section id="estimated-surplus" class="ui-card">
+      <h2 class="ui-label uppercase tracking-wide">Estimated monthly surplus</h2>
+      <p class="text-2xl font-semibold"><%= money(@surplus[:amount]) %></p>
+      <p><%= @surplus[:label] %></p>
+    </section>
+
+    <section id="asset-allocation" class="ui-card">
+      <h2 class="ui-label uppercase tracking-wide">Asset allocation</h2>
+      <% if @snapshot.allocation.values.all? { |amount| amount.to_d.zero? } && Account.none? %>
+        <p class="mt-2 text-sm">Add an account to see how the household is allocated.</p>
+        <%= link_to "Add an account", new_account_path, class: "ui-button mt-3" %>
+      <% else %>
+        <ul class="mt-3 grid gap-2">
+          <% @snapshot.allocation.each do |group, amount| %>
+            <li class="flex items-baseline justify-between gap-3">
+              <%= link_to group, assets_path(group: group.downcase), class: "ui-link" %>
+              <%= money(amount) %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+
+    <section id="insights" class="ui-card">
+      <h2 class="ui-label uppercase tracking-wide">Contextual insights</h2>
+      <% if @insights.empty? %>
+        <p class="mt-2 text-sm">Insights show up when spending, bills, or holdings need attention.</p>
+      <% else %>
+        <ul class="mt-3 grid gap-2">
+          <% @insights.each do |insight| %>
+            <li><%= insight.kind %>: <%= insight.text %></li>
+          <% end %>
+        </ul>
+      <% end %>
+    </section>
+
+    <section id="home-links" class="ui-card md:col-span-2">
+      <div class="flex flex-col items-start gap-2">
+        <%= link_to "Compare periods", compare_path, class: "ui-button-secondary" %>
+        <%= link_to "VOO benchmark", benchmark_path, class: "ui-button-secondary" %>
+        <% if @recent_review %>
+          <%= link_to "Latest review", review_path(@recent_review), class: "ui-link" %>
+        <% end %>
+      </div>
+    </section>
+  </div>
+<% end %>
+<p class="mt-8"><%= link_to "Settings", settings_path, class: "ui-button-secondary" %></p>

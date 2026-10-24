@@ -1,0 +1,37 @@
+<%= form_with model: expense, class: "mt-4 grid max-w-lg gap-3" do |form| %>
+  <% if expense.errors.any? %>
+    <ul>
+      <% expense.errors.full_messages.each do |message| %><li><%= message %></li><% end %>
+    </ul>
+  <% end %>
+  <%= form.label :amount %>
+  <%= form.currency_field :amount, required: true %>
+  <%= form.error_message :amount %>
+  <%= form.label :expense_category_id, "Category" %>
+  <%= form.collection_select :expense_category_id, ExpenseCategory.order(:name), :id, :name, { include_blank: "Choose a category" } %>
+  <%= form.error_message :expense_category_id %>
+  <%= form.label :category_name, "Or a new category" %>
+  <%= form.text_field :category_name %>
+  <%= form.error_message :category_name %>
+  <%= form.label :spent_on, "Date" %>
+  <%= form.date_field :spent_on, required: true %>
+  <%= form.error_message :spent_on %>
+  <%= form.label :merchant %>
+  <%= form.text_field :merchant %>
+  <%= form.label :notes %>
+  <%= form.text_area :notes %>
+  <details>
+    <summary>Refund or transfer</summary>
+    <%= form.label :kind %>
+    <%= form.select :kind, Expense::KINDS %>
+    <%= form.label :refund_of_id, "Original expense id" %>
+    <%= form.number_field :refund_of_id %>
+    <%= form.label :source_account_id, "From account" %>
+    <%= form.collection_select :source_account_id, Account.available_for_entry, :id, :name, { include_blank: true } %>
+    <%= form.label :destination_account_id, "To account" %>
+    <%= form.collection_select :destination_account_id, Account.available_for_entry, :id, :name, { include_blank: true } %>
+  </details>
+  <%= form.label :receipts, "Receipt, optional" %>
+  <%= form.file_field :receipts, multiple: true, accept: "image/*,.pdf" %>
+  <%= form.submit "Save" %>
+<% end %>

@@ -1,0 +1,14 @@
+<% links = [[:home, "Home", root_path], [:expenses, "Expenses", expenses_path], [:assets, "Assets", assets_path], [:review, "Review", reviews_path]] %>
+<% if variant == "bottom" %>
+  <ul class="grid grid-cols-4 gap-1 p-1 text-center">
+    <% links.each do |key, label, path| %>
+      <li><%= link_to label, path, **nav_link_options(key) %></li>
+    <% end %>
+  </ul>
+<% else %>
+  <ul class="flex flex-col gap-1">
+    <% links.each do |key, label, path| %>
+      <li><%= link_to label, path, **nav_link_options(key, align: "start") %></li>
+    <% end %>
+  </ul>
+<% end %>

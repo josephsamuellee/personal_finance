@@ -1,0 +1,5 @@
+<h1 class="text-xl font-semibold">Review <%= @review.review_on %></h1>
+<p><%= @review.commentary %></p>
+<p>Calculation version <%= @review.calculation_version %></p>
+<h2 class="mt-4 font-semibold">Saved financial context</h2>
+<pre class="overflow-x-auto text-xs"><%= JSON.pretty_generate(@review.inputs) %></pre>

@@ -1,0 +1,29 @@
+<h1 class="text-xl font-semibold"><%= @expense.kind.titleize %> <%= money(@expense.amount) %></h1>
+<p><%= @expense.spent_on %></p>
+<p><%= @expense.expense_category&.name %></p>
+<p><%= @expense.merchant %></p>
+<p><%= @expense.notes %></p>
+<% if @expense.refund_of %><p>Linked refund of expense <%= @expense.refund_of_id %></p><% end %>
+<h2 class="mt-4 font-semibold">Receipts</h2>
+<% if @expense.receipts.attached? %>
+  <ul>
+    <% @expense.receipts.each do |receipt| %>
+      <li>
+        <% if receipt.image? %>
+          <%= image_tag receipt, alt: receipt.filename.to_s, class: "max-w-full" %>
+        <% else %>
+          <%= link_to "Open PDF #{receipt.filename}", rails_blob_path(receipt, disposition: "inline") %>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>No receipt.</p>
+<% end %>
+<p class="mt-4"><%= link_to "Edit", edit_expense_path(@expense), class: "ui-button-secondary" %></p>
+<h2 class="mt-4 font-semibold">Revision history</h2>
+<ul>
+  <% @expense.record_revisions.order(:revision_number).each do |revision| %>
+    <li>Revision <%= revision.revision_number %> by <%= revision.user&.email_address %> at <%= revision.created_at %></li>
+  <% end %>
+</ul>

@@ -1,0 +1,14 @@
+<%= form_with model: user, class: "mt-4 grid max-w-sm gap-3" do |form| %>
+  <% if user.errors.any? %>
+    <ul class="text-sm text-red-700">
+      <% user.errors.full_messages.each do |message| %><li><%= message %></li><% end %>
+    </ul>
+  <% end %>
+  <%= form.label :email_address, "Email" %>
+  <%= form.email_field :email_address, required: true %>
+  <%= form.label :password %>
+  <%= form.password_field :password, required: true %>
+  <%= form.label :password_confirmation, "Confirm password" %>
+  <%= form.password_field :password_confirmation, required: true %>
+  <%= form.submit "Save user" %>
+<% end %>

@@ -1,0 +1,14 @@
+<% content_for :title, "Savings targets" %>
+<%= render "shared/page_header",
+      title: "Savings targets",
+      purpose: "Set the amount the household is trying to save.",
+      primary: link_to("Add a savings target", new_savings_goal_path, class: "ui-button") %>
+<% if @goals.empty? %>
+  <%= render "shared/empty_state", title: "No savings targets yet", message: "Add a target to compare later surplus estimates with a goal.", links: link_to("Add a savings target", new_savings_goal_path, class: "ui-button") %>
+<% else %>
+  <ul class="grid gap-3">
+    <% @goals.each do |goal| %>
+      <li class="ui-card"><%= goal.starts_on %> to <%= goal.ends_on || "open" %>: <%= money(goal.amount) %> <%= goal.reason %></li>
+    <% end %>
+  </ul>
+<% end %>

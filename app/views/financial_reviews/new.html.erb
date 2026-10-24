@@ -1,0 +1,11 @@
+<h1 class="text-xl font-semibold">Save a review</h1>
+<%= form_with model: @review, url: reviews_path, class: "grid max-w-lg gap-2" do |form| %>
+  <% if @review.errors.any? %>
+    <ul><% @review.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+  <% end %>
+  <%= form.label :review_on, "Review date" %>
+  <%= form.date_field :review_on, required: true %>
+  <%= form.label :commentary %>
+  <%= form.text_area :commentary, required: true %>
+  <%= form.submit "Save review" %>
+<% end %>

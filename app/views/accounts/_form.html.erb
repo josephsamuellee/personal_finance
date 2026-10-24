@@ -1,0 +1,15 @@
+<%= form_with model: account, class: "grid max-w-lg gap-2" do |form| %>
+  <% if account.errors.any? %>
+    <ul><% account.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+  <% end %>
+  <%= form.label :name %>
+  <%= form.text_field :name, required: true %>
+  <%= form.error_message :name %>
+  <%= form.label :account_type, "Type" %>
+  <%= form.select :account_type, Account::TYPES %>
+  <%= form.error_message :account_type %>
+  <%= form.label :currency %>
+  <%= form.text_field :currency, required: true %>
+  <%= form.error_message :currency %>
+  <%= form.submit "Save account" %>
+<% end %>

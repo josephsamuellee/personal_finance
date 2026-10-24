@@ -1,0 +1,14 @@
+<% content_for :title, "Decisions" %>
+<%= render "shared/page_header",
+      title: "Decisions",
+      purpose: "Remember why a financial choice was made.",
+      primary: link_to("New decision", new_decision_path, class: "ui-button") %>
+<% if @decisions.empty? %>
+  <%= render "shared/empty_state", title: "No decisions recorded yet", message: "Add a decision when you want a record of the choice and its reason.", links: link_to("New decision", new_decision_path, class: "ui-button") %>
+<% else %>
+  <ul class="grid gap-2">
+    <% @decisions.each do |decision| %>
+      <li><%= link_to decision.description, decision_path(decision), class: "ui-link" %></li>
+    <% end %>
+  </ul>
+<% end %>

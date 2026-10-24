@@ -1,0 +1,18 @@
+<% content_for :title, "Settings" %>
+<%= render "shared/page_header",
+      title: "Settings",
+      purpose: "Choose how the application looks." %>
+<section class="ui-card max-w-lg" aria-labelledby="appearance-heading">
+  <h2 id="appearance-heading" class="text-lg font-semibold">Appearance</h2>
+  <%= form_with url: settings_path, method: :patch, class: "mt-4 grid gap-2", data: { controller: "appearance", action: "change->appearance#choose" } do %>
+    <fieldset class="grid gap-2">
+      <legend class="mb-2 text-sm font-medium">Theme</legend>
+      <% User::APPEARANCES.each do |mode| %>
+        <label class="ui-button-secondary justify-start gap-3">
+          <%= radio_button_tag :appearance, mode, current_user.appearance == mode, class: "size-4" %>
+          <%= mode.capitalize %>
+        </label>
+      <% end %>
+    </fieldset>
+  <% end %>
+</section>

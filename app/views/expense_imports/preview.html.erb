@@ -1,0 +1,20 @@
+<h1 class="text-xl font-semibold">Preview import</h1>
+<%= form_with url: confirm_expense_imports_path, method: :post do %>
+  <table class="mt-4 w-full text-sm">
+    <thead><tr><th>Line</th><th>Date</th><th>Amount</th><th>Category</th><th>Problems</th><th>Exclude</th></tr></thead>
+    <tbody>
+      <% @draft["rows"].each do |row| %>
+        <tr>
+          <td><%= row["line"] %></td>
+          <td><%= row["spent_on"] %></td>
+          <td><%= row["amount"] %></td>
+          <td><%= row["category_name"] %></td>
+          <td><%= row["errors"].join(", ") %><%= " invalid" if row["errors"].present? %></td>
+          <td><%= check_box_tag "exclude[]", row["line"], row["errors"].present?, id: "exclude_#{row["line"]}" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <%= submit_tag "Confirm import" %>
+<% end %>
+<%= button_to "Cancel import", cancel_expense_imports_path, method: :delete %>

@@ -1,0 +1,20 @@
+<h1 class="text-xl font-semibold">Historical comparison</h1>
+<%= form_with url: compare_path, method: :get do %>
+  <%= date_field_tag :on, @on %>
+  <%= select_tag :against, options_for_select([["Prior month", "prior_month"], ["Prior year", "prior_year"], ["Prior observation", "prior_observation"]], @against) %>
+  <%= submit_tag "Compare" %>
+<% end %>
+<section>
+  <h2><%= @on %> <%= @current.quality_label %></h2>
+  <p>Net worth <%= @current.incomplete? ? "Incomplete" : money(@current.net_worth) %></p>
+  <p>Tracked spending <%= money(@current_spending) %></p>
+  <% if @current.incomplete? %><p>Missing values are excluded.</p><% end %>
+  <% if @current.estimated? %><p>Estimated values are carried forward.</p><% end %>
+</section>
+<section>
+  <h2><%= @other_on %> <%= @other.quality_label %></h2>
+  <p>Net worth <%= @other.incomplete? ? "Incomplete" : money(@other.net_worth) %></p>
+  <p>Tracked spending <%= money(@other_spending) %></p>
+  <% if @other.incomplete? %><p>Missing values are excluded.</p><% end %>
+  <% if @other.estimated? %><p>Estimated values are carried forward.</p><% end %>
+</section>

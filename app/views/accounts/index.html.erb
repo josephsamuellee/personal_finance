@@ -1,0 +1,22 @@
+<% content_for :title, "Accounts" %>
+<%= render "shared/page_header",
+      title: "Accounts",
+      purpose: "Name the accounts the household uses.",
+      primary: link_to("Add an account", new_account_path, class: "ui-button") %>
+<% if @accounts.empty? %>
+  <%= render "shared/empty_state", title: "No accounts yet", message: "Add an account before recording balances or holdings.", links: link_to("Add an account", new_account_path, class: "ui-button") %>
+<% else %>
+  <ul class="grid gap-3">
+    <% @accounts.each do |account| %>
+      <li class="ui-card">
+        <%= link_to account.name, account, class: "ui-link" %>
+        <p class="text-sm"><%= account.account_type %> <%= account.currency %></p>
+        <% if account.archived_at %>
+          <p>Archived</p>
+        <% else %>
+          <%= button_to "Archive", account_path(account), method: :patch, params: { archive: "1" }, class: "ui-button-secondary mt-2", form: { data: { turbo_submits_with: "Archiving…" } } %>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

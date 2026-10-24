@@ -1,0 +1,15 @@
+<script>
+  (function () {
+    function applyAppearance() {
+      var root = document.documentElement
+      var mode = root.getAttribute("data-appearance") || "system"
+      var dark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+      root.classList.toggle("dark", dark)
+    }
+    window.applyAppearance = applyAppearance
+    applyAppearance()
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      if ((document.documentElement.getAttribute("data-appearance") || "system") === "system") applyAppearance()
+    })
+  })()
+</script>
