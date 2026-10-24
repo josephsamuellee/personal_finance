@@ -57,7 +57,8 @@ class ShellTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Personal Finance"
-    assert_includes response.body, "/icon.png"
+    assert_includes response.body, "/android-chrome-192x192.png"
+    assert_includes response.body, "/android-chrome-512x512.png"
   end
 
   test "service worker does not cache writes or register background sync" do
