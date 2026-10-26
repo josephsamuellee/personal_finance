@@ -173,7 +173,7 @@ class HoldingsImportTest < ActionDispatch::IntegrationTest
     draft = ExpenseImportDraft.read(@request.session[:holdings_import_token] || session[:holdings_import_token])
     rows = draft["rows"].map do |row|
       HoldingCsv::Row.new(
-        line: row["line"], ticker: row["ticker"], note: row["note"], currency: row["currency"],
+        line: row["line"], account: @account, ticker: row["ticker"], note: row["note"], currency: row["currency"],
         observation_date: row["observation_date"] && Date.iso8601(row["observation_date"]),
         quantity: row["quantity"] && BigDecimal(row["quantity"]),
         cost_basis: row["cost_basis"] && BigDecimal(row["cost_basis"]),
@@ -181,6 +181,6 @@ class HoldingsImportTest < ActionDispatch::IntegrationTest
         errors: Array(row["errors"])
       )
     end
-    HoldingsImport::Planner.new(account: @account, captured_on: Date.iso8601(draft["captured_on"]), rows:).fingerprint
+    HoldingsImport::Planner.new(captured_on: Date.iso8601(draft["captured_on"]), rows:).fingerprint
   end
 end

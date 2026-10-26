@@ -29,6 +29,34 @@ class HoldingCsvTest < ActiveSupport::TestCase
     assert_includes result.rows.first.errors.join, "3"
   end
 
+  test "warnings do not make a row invalid" do
+    row = HoldingCsv::Row.new(line: 2, ticker: "VOO", errors: [], warnings: [ "Account name differs" ])
+
+    assert row.valid?
+    assert_equal [ "Account name differs" ], row.warnings
+  end
+
+  test "a leading UTF-8 byte-order mark is accepted" do
+    csv = "\uFEFFticker,note,currency,observation_date,quantity,cost_basis,price_per_share\nVOO,,USD,,10,1000,100\n"
+    result = HoldingCsv.parse(csv, captured_on: @captured)
+
+    assert result.valid?
+    assert_equal "VOO", result.rows.first.ticker
+  end
+
+  test "the same ticker and date in two accounts is not a duplicate" do
+    schwab = Account.create!(name: "Schwab", account_type: "brokerage", currency: "USD")
+    fidelity = Account.create!(name: "Fidelity", account_type: "brokerage", currency: "USD")
+    rows = [ schwab, fidelity, fidelity ].each_with_index.map do |account, index|
+      HoldingCsv::Row.new(line: index + 2, account:, ticker: "VOO", observation_date: @captured, errors: [])
+    end
+    HoldingCsv.mark_duplicates(rows)
+
+    assert rows[0].valid?
+    assert_includes rows[1].errors.join, "rows 3, 4"
+    assert_includes rows[2].errors.join, "rows 3, 4"
+  end
+
   test "negative and non-numeric values are rejected and zero quantity is allowed" do
     csv = <<~CSV
       ticker,note,currency,observation_date,quantity,cost_basis,price_per_share

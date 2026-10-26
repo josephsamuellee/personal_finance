@@ -15,7 +15,7 @@ class HoldingsImportsController < ApplicationController
     end
 
     captured_on = Date.current
-    result = HoldingCsv.parse(upload, captured_on:)
+    result = HoldingCsv.parse(upload, captured_on:, account: @account)
     if result.file_errors.any?
       return redirect_to new_account_holdings_import_path(@account), alert: result.file_errors.to_sentence
     end
@@ -41,9 +41,9 @@ class HoldingsImportsController < ApplicationController
     load_draft or return
     authorized = Array(params[:authorize_price])
     commit = HoldingsImport::Commit.new(
-      account: @account, user: current_user, captured_on: Date.iso8601(@draft["captured_on"]),
+      user: current_user, captured_on: Date.iso8601(@draft["captured_on"]),
       rows: csv_rows, authorized_price_keys: authorized,
-      historical_ack: params[:historical_ack], fingerprint: params[:fingerprint]
+      historical_ack: params[:historical_ack], fingerprint: params[:fingerprint], batch_account: @account
     ).call
 
     case commit.status
@@ -54,7 +54,7 @@ class HoldingsImportsController < ApplicationController
     when :stale
       @planned = commit.planned
       @fingerprint = HoldingsImport::Planner.new(
-        account: @account, captured_on: Date.iso8601(@draft["captured_on"]),
+        captured_on: Date.iso8601(@draft["captured_on"]),
         rows: csv_rows, authorized_price_keys: authorized
       ).fingerprint(@planned)
       flash.now[:alert] = "Holdings changed since preview. Review the updated plan."
@@ -95,7 +95,7 @@ class HoldingsImportsController < ApplicationController
     def csv_rows
       @draft["rows"].map do |row|
         HoldingCsv::Row.new(
-          line: row["line"], ticker: row["ticker"], note: row["note"], currency: row["currency"],
+          line: row["line"], account: @account, ticker: row["ticker"], note: row["note"], currency: row["currency"],
           observation_date: row["observation_date"] && Date.iso8601(row["observation_date"]),
           quantity: row["quantity"] && BigDecimal(row["quantity"]),
           cost_basis: row["cost_basis"] && BigDecimal(row["cost_basis"]),
@@ -107,7 +107,7 @@ class HoldingsImportsController < ApplicationController
 
     def planner
       HoldingsImport::Planner.new(
-        account: @account, captured_on: Date.iso8601(@draft["captured_on"]),
+        captured_on: Date.iso8601(@draft["captured_on"]),
         rows: csv_rows, authorized_price_keys: Array(params[:authorize_price])
       )
     end

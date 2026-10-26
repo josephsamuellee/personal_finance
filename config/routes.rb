@@ -40,6 +40,13 @@ Rails.application.routes.draw do
   resources :securities, only: [ :create ]
   get "assets/maintenance", to: "asset_maintenance#show", as: :asset_maintenance
   get "assets", to: "holdings#index"
+  # Kept out of /assets, which the asset pipeline serves, and ahead of the holding route it would otherwise match.
+  resource :bulk_holdings_import, path: "holdings/bulk", only: %i[show create], controller: "bulk_holdings_imports" do
+    get :export
+    get :preview
+    post :confirm
+    delete :cancel
+  end
   get "holdings/:account_id/:security_id", to: "holdings#show", as: :holding
   post "holdings/positions", to: "holdings#update_position", as: :holding_positions
   post "holdings/balances", to: "holdings#update_balance", as: :holding_balances

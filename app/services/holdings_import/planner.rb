@@ -1,7 +1,7 @@
 module HoldingsImport
   PlanRow = Struct.new(
-    :line, :ticker, :security, :note, :previous_note, :currency, :observed_on,
-    :quantity, :cost_basis, :price, :saved_price, :outcomes, :errors, :price_key,
+    :line, :account, :ticker, :security, :note, :previous_note, :currency, :observed_on,
+    :quantity, :cost_basis, :price, :saved_price, :outcomes, :errors, :warnings, :price_key,
     keyword_init: true
   ) do
     def valid?
@@ -18,8 +18,7 @@ module HoldingsImport
   end
 
   class Planner
-    def initialize(account:, captured_on:, rows:, authorized_price_keys: [])
-      @account = account
+    def initialize(captured_on:, rows:, authorized_price_keys: [])
       @captured_on = captured_on
       @rows = rows
       @authorized_price_keys = authorized_price_keys.map(&:to_s)
@@ -32,7 +31,7 @@ module HoldingsImport
     def fingerprint(planned = plan)
       planned.map { |row|
         [
-          row.line, row.ticker, row.security&.id, row.observed_on&.iso8601,
+          row.line, row.account&.id, row.ticker, row.security&.id, row.observed_on&.iso8601,
           row.quantity&.to_s, row.cost_basis&.to_s, row.price&.to_s, row.saved_price&.to_s, row.note
         ]
       }.to_json
@@ -41,9 +40,9 @@ module HoldingsImport
     private
       def plan_row(row)
         planned = PlanRow.new(
-          line: row.line, ticker: row.ticker, note: row.note, currency: row.currency,
+          line: row.line, account: row.account, ticker: row.ticker, note: row.note, currency: row.currency,
           observed_on: row.observation_date, quantity: row.quantity, cost_basis: row.cost_basis,
-          price: row.price_per_share, outcomes: [], errors: row.errors.dup
+          price: row.price_per_share, outcomes: [], errors: row.errors.dup, warnings: row.warnings.dup
         )
         return planned unless planned.errors.empty?
 
@@ -74,10 +73,10 @@ module HoldingsImport
         end
 
         observation = if planned.security
-          PositionObservation.current_on({ account_id: @account.id, security_id: planned.security.id }, row.observation_date)
+          PositionObservation.current_on({ account_id: row.account.id, security_id: planned.security.id }, row.observation_date)
         end
         on_date = if planned.security
-          PositionObservation.kept.where(account: @account, security: planned.security, observed_on: row.observation_date)
+          PositionObservation.kept.where(account: row.account, security: planned.security, observed_on: row.observation_date)
                              .order(sequence: :desc).first
         end
 

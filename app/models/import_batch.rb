@@ -1,5 +1,5 @@
 class ImportBatch < ApplicationRecord
-  KINDS = %w[expenses holdings].freeze
+  KINDS = %w[expenses holdings holdings_bulk].freeze
 
   belongs_to :user
   belongs_to :account, optional: true

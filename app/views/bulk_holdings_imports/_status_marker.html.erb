@@ -1,0 +1,7 @@
+<% if status == :accepted %>
+  <span class="font-bold text-emerald-700 dark:text-emerald-300" aria-hidden="true">✓</span>
+  <span class="sr-only">Accepted</span>
+<% else %>
+  <span class="font-bold text-red-700 dark:text-red-300" aria-hidden="true">!</span>
+  <span class="text-sm font-medium text-red-700 dark:text-red-300"><%= status == :error ? "Error" : "Warning" %></span>
+<% end %>

@@ -18,7 +18,7 @@ class HoldingsImportPlannerTest < ActiveSupport::TestCase
       ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
       VOO,,USD,,55,18000,
     CSV
-    planned = HoldingsImport::Planner.new(account: @account, captured_on: Date.current, rows:).plan.first
+    planned = HoldingsImport::Planner.new(captured_on: Date.current, rows:).plan.first
 
     assert_equal BigDecimal("55"), planned.quantity
     assert_includes planned.outcomes, "updated observation"
@@ -29,7 +29,7 @@ class HoldingsImportPlannerTest < ActiveSupport::TestCase
       ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
       VOO,,USD,,55,18000,
     CSV
-    planned = HoldingsImport::Planner.new(account: @account, captured_on: Date.current, rows:).plan.first
+    planned = HoldingsImport::Planner.new(captured_on: Date.current, rows:).plan.first
 
     assert_equal @voo.id, planned.security.id
     assert_equal "Core", planned.previous_note
@@ -41,7 +41,7 @@ class HoldingsImportPlannerTest < ActiveSupport::TestCase
       ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
       VOO,Updated,,#{Date.current},50,18000,
     CSV
-    planned = HoldingsImport::Planner.new(account: @account, captured_on: Date.current, rows:).plan.first
+    planned = HoldingsImport::Planner.new(captured_on: Date.current, rows:).plan.first
 
     assert_includes planned.outcomes, "shared note change"
   end
@@ -51,7 +51,7 @@ class HoldingsImportPlannerTest < ActiveSupport::TestCase
       ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
       XYZ,,USD,,1,1,
     CSV
-    planned = HoldingsImport::Planner.new(account: @account, captured_on: Date.current, rows:).plan.first
+    planned = HoldingsImport::Planner.new(captured_on: Date.current, rows:).plan.first
 
     assert_not planned.valid?
     assert_includes planned.errors.join, "price"
@@ -62,7 +62,7 @@ class HoldingsImportPlannerTest < ActiveSupport::TestCase
       ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
       VOO,,USD,,50,18000,510
     CSV
-    planned = HoldingsImport::Planner.new(account: @account, captured_on: Date.current, rows:).plan.first
+    planned = HoldingsImport::Planner.new(captured_on: Date.current, rows:).plan.first
 
     assert planned.price_conflict?
     assert_includes planned.errors.join, "540"
@@ -74,12 +74,40 @@ class HoldingsImportPlannerTest < ActiveSupport::TestCase
       ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
       VOO,,USD,,50,18000,
     CSV
-    planned = HoldingsImport::Planner.new(account: @account, captured_on: Date.current, rows:).plan.first
+    planned = HoldingsImport::Planner.new(captured_on: Date.current, rows:).plan.first
 
     assert_includes planned.errors.join, "more than one"
   end
 
-  def parse(csv)
-    HoldingCsv.parse(csv, captured_on: Date.current).rows
+  test "each row is planned against its own account" do
+    rows = parse(<<~CSV, account: @other) + parse(<<~CSV)
+      ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
+      VOO,,USD,,5,1000,
+    CSV
+      ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
+      VOO,,USD,,5,1000,
+    CSV
+    other_row, account_row = HoldingsImport::Planner.new(captured_on: Date.current, rows:).plan
+
+    assert_equal @other, other_row.account
+    assert other_row.no_op?
+    assert_equal @account, account_row.account
+    assert_includes account_row.outcomes, "updated observation"
+  end
+
+  test "row warnings carry into the plan without blocking it" do
+    rows = parse(<<~CSV)
+      ticker,note,currency,observation_date,quantity,cost_basis,price_per_share
+      VOO,,USD,,55,18000,
+    CSV
+    rows.first.warnings << "Account name differs"
+    planned = HoldingsImport::Planner.new(captured_on: Date.current, rows:).plan.first
+
+    assert planned.valid?
+    assert_equal [ "Account name differs" ], planned.warnings
+  end
+
+  def parse(csv, account: @account)
+    HoldingCsv.parse(csv, captured_on: Date.current, account:).rows
   end
 end

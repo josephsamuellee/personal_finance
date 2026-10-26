@@ -1,0 +1,5 @@
+<%= form_with url: bulk_holdings_import_path, method: :post, multipart: true, class: "mt-3 grid gap-3" do %>
+  <label class="text-sm font-medium" for="bulk-holdings-file">CSV file</label>
+  <input class="ui-field" id="bulk-holdings-file" type="file" name="file" accept=".csv,text/csv" required>
+  <button class="ui-button-secondary" type="submit" data-turbo-submits-with="Reading CSV…"><%= label %></button>
+<% end %>
